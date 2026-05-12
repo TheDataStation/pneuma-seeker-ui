@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+:root {
+  --color-ink: 16 20 24;
+  --color-sand: 244 241 236;
+  --color-sand-strong: 232 225 216;
+  --color-ember: 226 96 56;
+  --color-sea: 16 114 104;
+  --color-slate: 94 102 112;
+  --color-card: 255 255 255;
+  --shadow-soft: 0 18px 50px -24px rgba(19, 24, 28, 0.35);
+}
+
+@theme inline {
+  --color-ink: rgb(var(--color-ink));
+  --color-sand: rgb(var(--color-sand));
+  --color-sand-strong: rgb(var(--color-sand-strong));
+  --color-ember: rgb(var(--color-ember));
+  --color-sea: rgb(var(--color-sea));
+  --color-slate: rgb(var(--color-slate));
+  --color-card: rgb(var(--color-card));
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: radial-gradient(circle at 10% 20%, #fef8f0 0%, transparent 55%),
+    radial-gradient(circle at 80% 10%, #eff9f7 0%, transparent 60%),
+    linear-gradient(160deg, #f6f2eb 0%, #f8f6f3 40%, #f0f4f6 100%);
+  color: rgb(var(--color-ink));
+  font-family: var(--font-sans), system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+.font-display {
+  font-family: var(--font-display), "Times New Roman", serif;
+}
+
+.app-shell {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(18px);
+}
+
+.panel {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(220, 214, 206, 0.7);
+  box-shadow: 0 12px 30px -22px rgba(21, 26, 30, 0.45);
+}
+
+.subtle-ring {
+  box-shadow: inset 0 0 0 1px rgba(203, 196, 187, 0.5);
+}
+
+.fade-in {
+  animation: fade-in 0.45s ease-out both;
+}
+
+.rise-in {
+  animation: rise-in 0.35s ease-out both;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
