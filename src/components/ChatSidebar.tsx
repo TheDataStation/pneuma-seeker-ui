@@ -82,9 +82,6 @@ export function ChatSidebar({
             })
           )}
         </div>
-        <div className="mt-4 rounded-xl border border-sand-strong/70 bg-white px-3 py-2 text-xs text-slate/70">
-          Switch chats to view each conversation and sidebar state.
-        </div>
       </div>
     </aside>
   );
