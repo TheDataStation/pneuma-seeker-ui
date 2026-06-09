@@ -42,7 +42,7 @@ export function TablePreview({ title, rows, columnDescriptions }: TablePreviewPr
                   <td className="px-3 py-3 text-slate/70">No rows yet.</td>
                 </tr>
               ) : (
-                rows.slice(0, 8).map((row, rowIndex) => (
+                rows.map((row, rowIndex) => (
                   <tr key={rowIndex} className="border-t border-sand-strong/50">
                     {columns.map((col) => (
                       <td key={col} className="px-3 py-2 text-ink/90">

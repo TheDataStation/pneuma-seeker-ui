@@ -63,7 +63,7 @@ export function ChatSidebar({
               return (
                 <button
                   key={chat.id}
-                  className={`w-full rounded-xl border px-4 py-3 text-left transition ${isActive
+                  className={`cursor-pointer w-full rounded-xl border px-4 py-3 text-left transition ${isActive
                     ? "border-ember/40 bg-ember/10"
                     : "border-sand-strong/70 bg-white hover:border-ember/30"
                     }`}

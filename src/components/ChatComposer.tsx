@@ -23,7 +23,7 @@ export function ChatComposer({ isSending, onSend, className }: ChatComposerProps
         <div className="relative">
           <textarea
             className="min-h-[60px] w-full resize-none rounded-xl border border-sand-strong/70 bg-white px-4 py-3 pr-14 text-sm text-ink shadow-sm outline-none transition focus:border-ember/50 focus:ring-2 focus:ring-ember/20 overflow-x-hidden"
-            placeholder="Ask Pneuma..."
+            placeholder="Ask Pneuma-Seeker..."
             value={value}
             onChange={(event) => setValue(event.target.value)}
             onKeyDown={(event) => {
