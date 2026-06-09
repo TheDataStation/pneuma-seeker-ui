@@ -1,3 +1,4 @@
+// src/components/ChatComposer.tsx
 import { useState } from "react";
 
 type ChatComposerProps = {
@@ -50,16 +51,11 @@ export function ChatComposer({ isSending, onSend, className }: ChatComposerProps
               strokeLinejoin="round"
               aria-hidden="true"
             >
-              <path d="M4 10h10" />
-              <path d="M10 5l5 5-5 5" />
+              <path d="M10 16V6" />
+              <path d="M5 10l5-5 5 5" />
             </svg>
           </button>
         </div>
-        {/* <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-xs text-slate/70">
-            Shift + Enter for a new line.
-          </p>
-        </div> */}
       </div>
     </div>
   );

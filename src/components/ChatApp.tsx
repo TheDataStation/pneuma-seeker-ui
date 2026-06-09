@@ -509,7 +509,10 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
                                 {isUserMenuOpen && (
                                     <div className="absolute right-0 mt-2 w-48 rounded-xl border border-sand-strong/70 bg-white shadow-lg z-50 overflow-hidden">
                                         <div className="px-4 py-3 text-xs text-slate border-b border-sand-strong/30 truncate">
-                                            {user.email}
+                                            Email: {user.email}
+                                        </div>
+                                        <div className="px-4 py-3 text-xs text-slate border-b border-sand-strong/30 truncate">
+                                            Group: {user.group_name}
                                         </div>
                                         <button
                                             type="button"

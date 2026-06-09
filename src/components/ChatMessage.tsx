@@ -1,3 +1,4 @@
+// src/components/ChatMessage.tsx
 import type { ChatMessage as ChatMessageType } from "@/lib/types";
 import { useState } from "react";
 
@@ -27,7 +28,7 @@ function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center flex-1 h-full gap-3 py-16 text-center">
       <p className="text-2xl font-medium text-ink/80">{message}</p>
-      <p className="text-sm text-slate/60">Ask anything to get started.</p>
+      {/* <p className="text-sm text-slate/60">Ask anything to get started.</p> */}
     </div>
   );
 }

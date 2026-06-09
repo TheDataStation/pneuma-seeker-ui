@@ -59,14 +59,16 @@ export function InspectorSidebar({
 
   return (
     <aside className="flex h-full min-h-0 flex-col gap-6 overflow-y-auto pr-2">
-      {/* Step 1: Retrieve Tables */}
       <section className="panel rounded-[15px] p-6">
         <div
           className="flex cursor-pointer items-center justify-between"
           onClick={() => toggleSection("step1")}
         >
           <div className="flex items-center gap-2">
-            <h3 className="font-display text-xl">Step 1: Retrieve Tables</h3>
+            <span className="flex items-center justify-center w-7 h-7 rounded-full bg-[#800000] text-white text-sm font-bold">
+              1
+            </span>
+            <h3 className="font-display text-xl">Retrieve Tables</h3>
             <span className="text-xs text-slate/40">
               {expandedSections.step1 ? "▲" : "▼"}
             </span>
@@ -118,14 +120,16 @@ export function InspectorSidebar({
         )}
       </section>
 
-      {/* Step 2: Prepare Data */}
       <section className="panel rounded-[15px] p-6">
         <div
           className="flex cursor-pointer items-center justify-between"
           onClick={() => toggleSection("step2")}
         >
           <div className="flex items-center gap-2">
-            <h3 className="font-display text-xl">Step 2: Prepare Data</h3>
+            <span className="flex items-center justify-center w-7 h-7 rounded-full bg-[#800000] text-white text-sm font-bold">
+              2
+            </span>
+            <h3 className="font-display text-xl">Prepare Data</h3>
             <span className="text-xs text-slate/40">
               {expandedSections.step2 ? "▲" : "▼"}
             </span>
@@ -186,14 +190,16 @@ export function InspectorSidebar({
         )}
       </section>
 
-      {/* Step 3: Define Views & Script */}
       <section className="panel rounded-[15px] p-6">
         <div
           className="flex cursor-pointer items-center justify-between"
           onClick={() => toggleSection("step3")}
         >
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-display text-xl">Step 3: Define Views & Script</h3>
+            <span className="flex items-center justify-center w-7 h-7 rounded-full bg-[#800000] text-white text-sm font-bold">
+              3
+            </span>
+            <h3 className="font-display text-xl">Define Views & Script</h3>
             <span className="text-xs text-slate/40">
               {expandedSections.step3 ? "▲" : "▼"}
             </span>
@@ -220,7 +226,7 @@ export function InspectorSidebar({
             <div className="space-y-3 pt-2">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate/70">
-                  Python script (S)
+                  Python script
                 </p>
                 <pre className="mt-2 max-h-48 overflow-auto rounded-2xl border border-sand-strong/70 bg-white px-4 py-3 text-xs text-ink">
                   {sidebar?.state?.S?.trim() || "No script yet."}

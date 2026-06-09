@@ -52,7 +52,7 @@ export function ChatSidebar({
       >
         <div className="flex items-center justify-between">
           <h2 className="font-display text-lg">Chats</h2>
-          <span className="text-xs text-slate/70">{chatSessions.length}</span>
+          {/* <span className="text-xs text-slate/70">{chatSessions.length}</span> */}
         </div>
         <div className="mt-4 flex-1 space-y-2 overflow-y-auto pr-1">
           {chatSessions.length === 0 ? (
