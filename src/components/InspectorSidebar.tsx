@@ -243,6 +243,12 @@ export function InspectorSidebar({
 
   return (
     <aside className="flex h-full min-h-0 flex-col gap-6 overflow-y-auto pr-2">
+      <div className="px-1">
+        <h2 className="font-display text-2xl">Analysis Pipeline</h2>
+        <p className="mt-1 text-sm text-slate/60">
+          The steps Pneuma-Seeker took to answer your question.
+        </p>
+      </div>
       {steps.map((step, idx) => (
         <section key={step.key} className="panel rounded-[15px] p-6">
           <div
