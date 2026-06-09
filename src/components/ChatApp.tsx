@@ -19,6 +19,7 @@ import {
     getChatState,
     logout,
     streamChat,
+    deleteChat,
 } from "@/lib/api";
 
 import type {
@@ -389,6 +390,36 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
         }
     };
 
+    const handleDeleteChat = useCallback(
+        async (chatId: string) => {
+            try {
+                // 1. Call API route to delete the chat backend record
+                await deleteChat(chatId);
+
+                // 2. Remove from the local chat sessions list
+                setChatSessions((prev) => prev.filter((session) => session.id !== chatId));
+
+                // 3. Clear local runtime track state
+                setChatStateById((prev) => {
+                    const next = { ...prev };
+                    delete next[chatId];
+                    return next;
+                });
+
+                // 4. If the deleted chat was the active one, clear selection and reset route
+                if (activeChatId === chatId) {
+                    setActiveChatId("");
+                    router.push("/");
+                }
+            } catch (error) {
+                if (handleUnauthorized(error)) return;
+                console.error("Failed to delete chat:", error);
+                alert("Could not delete the chat session. Please try again.");
+            }
+        },
+        [activeChatId, router, handleUnauthorized]
+    );
+
     const handleExecute = async () => {
         const chatId = activeChatId;
         if (!chatId) return;
@@ -473,6 +504,7 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
                             router.push(`/chat/${id}`);
                         }}
                         isOpen={isChatListOpen}
+                        onDeleteChat={handleDeleteChat}
                     />
 
                     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">

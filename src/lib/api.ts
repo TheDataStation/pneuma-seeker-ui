@@ -255,7 +255,6 @@ export async function getAllChats(
   offset = 0,
   token?: string,
 ): Promise<ChatListResponse> {
-  // Use the wrapper! It prepends DEFAULT_BASE and sets up headers automatically.
   return request<ChatListResponse>(
     `/chat/sessions?limit=${limit}&offset=${offset}`, 
     { method: "GET" }, 
@@ -269,6 +268,15 @@ export async function getProvenanceNodes(
 ): Promise<ProvenanceNodesResponse> {
   return request<ProvenanceNodesResponse>(`/chat/provenance_nodes/${chat_id}`, {
     method: "GET",
+  }, token);
+}
+
+export async function deleteChat(
+  chat_id: string,
+  token?: string,
+): Promise<{ detail: string }> {
+  return request<{ detail: string }>(`/chat/${chat_id}`, {
+    method: "DELETE",
   }, token);
 }
 
