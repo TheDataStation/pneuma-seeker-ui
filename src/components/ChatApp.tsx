@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { ChatSidebar } from "@/components/ChatSidebar";
 import { MainChatArea } from "@/components/MainChatArea";
-import { InspectorSidebar } from "@/components/InspectorSidebar";
+import { InspectorSidebar, hasSidebarContent } from "@/components/InspectorSidebar";
 
 import {
     ApiError,
@@ -443,6 +443,8 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
         );
     }
 
+    const showInspector = hasSidebarContent(sidebar);
+
     return (
         <div className="flex h-screen flex-1 flex-col overflow-hidden">
             <div className="app-shell flex flex-1 min-h-0 flex-col overflow-hidden border border-white/70 p-3 lg:p-4 fade-in">
@@ -527,26 +529,31 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
                             </div>
                         </header>
 
-                        <div className="mt-8 grid min-h-0 flex-1 gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
+                        <div
+                            className={`mt-8 grid min-h-0 flex-1 gap-6 ${showInspector ? "lg:grid-cols-[minmax(0,1fr)_420px]" : ""
+                                }`}
+                        >
                             <MainChatArea
                                 messages={messages}
                                 isStreaming={isStreaming}
                                 onSend={handleSend}
                             />
 
-                            <InspectorSidebar
-                                activeChatId={activeChatId}
-                                sidebar={sidebar}
-                                tableIndex={tableIndex}
-                                provIndex={provIndex}
-                                executionResult={executionResult}
-                                queryInput={queryInput}
-                                queryResult={queryResult}
-                                updateChatState={updateChatState}
-                                onExecute={handleExecute}
-                                onTableDownload={handleTableDownload}
-                                onProvenanceDownload={handleProvenanceDownload}
-                            />
+                            {showInspector && (
+                                <InspectorSidebar
+                                    activeChatId={activeChatId}
+                                    sidebar={sidebar}
+                                    tableIndex={tableIndex}
+                                    provIndex={provIndex}
+                                    executionResult={executionResult}
+                                    queryInput={queryInput}
+                                    queryResult={queryResult}
+                                    updateChatState={updateChatState}
+                                    onExecute={handleExecute}
+                                    onTableDownload={handleTableDownload}
+                                    onProvenanceDownload={handleProvenanceDownload}
+                                />
+                            )}
                         </div>
                     </div>
                 </div>
