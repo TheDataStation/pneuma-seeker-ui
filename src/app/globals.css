@@ -1,14 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  --color-ink: 16 20 24;
-  --color-sand: 244 241 236;
-  --color-sand-strong: 232 225 216;
-  --color-ember: 226 96 56;
-  --color-sea: 16 114 104;
-  --color-slate: 94 102 112;
+  --color-ink: 10 18 24;
+  --color-sand: 249 248 246;
+  --color-sand-strong: 236 234 231;
+  --color-ember: 128 0 0;
+  --color-sea: 0 42 57;
+  --color-slate: 82 90 98;
   --color-card: 255 255 255;
-  --shadow-soft: 0 18px 50px -24px rgba(19, 24, 28, 0.35);
+  --shadow-soft: 0 18px 50px -28px rgba(10, 18, 24, 0.35);
 }
 
 @theme inline {
@@ -28,9 +28,9 @@
 }
 
 body {
-  background: radial-gradient(circle at 10% 20%, #fef8f0 0%, transparent 55%),
-    radial-gradient(circle at 80% 10%, #eff9f7 0%, transparent 60%),
-    linear-gradient(160deg, #f6f2eb 0%, #f8f6f3 40%, #f0f4f6 100%);
+  background: radial-gradient(circle at 15% 20%, rgba(128, 0, 0, 0.08) 0%, transparent 52%),
+    radial-gradient(circle at 85% 10%, rgba(0, 42, 57, 0.08) 0%, transparent 55%),
+    linear-gradient(160deg, #f6f4f2 0%, #f7f7f6 45%, #eef2f4 100%);
   color: rgb(var(--color-ink));
   font-family: var(--font-sans), system-ui, sans-serif;
   min-height: 100vh;

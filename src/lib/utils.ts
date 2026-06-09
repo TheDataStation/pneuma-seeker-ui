@@ -3,11 +3,7 @@ export function formatTime(timestamp: number): string {
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-export async function downloadBlob(
-  response: Response,
-  filename: string
-): Promise<void> {
-  const blob = await response.blob();
+export function saveBlob(blob: Blob, filename: string): void {
   const blobUrl = window.URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = blobUrl;
@@ -16,4 +12,11 @@ export async function downloadBlob(
   anchor.click();
   anchor.remove();
   window.URL.revokeObjectURL(blobUrl);
+}
+
+export async function downloadBlob(
+  response: Response,
+  filename: string
+): Promise<void> {
+  saveBlob(await response.blob(), filename);
 }
