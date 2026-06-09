@@ -224,10 +224,12 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
     }, [isChatListOpen]);
 
     const refreshSidebar = useCallback(
-        async (chatId: string) => {
+        async (chatId: string, force: boolean = false) => {
             if (!chatId) return;
-            const isLocalOnly = !chatSessions.some((s) => s.id === chatId);
-            if (isLocalOnly) return;
+            if (!force) {
+                const isLocalOnly = !chatSessions.some((s) => s.id === chatId);
+                if (isLocalOnly) return;
+            }
 
             updateChatState(chatId, (prev) => ({
                 ...prev,
@@ -383,7 +385,7 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
             updateChatState(chatId, (prev) => ({ ...prev, status: "Stream failed." }));
         } finally {
             updateChatState(chatId, (prev) => ({ ...prev, isStreaming: false }));
-            refreshSidebar(chatId);
+            refreshSidebar(chatId, true);
         }
     };
 
