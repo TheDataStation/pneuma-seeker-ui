@@ -37,7 +37,7 @@ export function ChatComposer({ isSending, onSend, className }: ChatComposerProps
             type="button"
             className="cursor-pointer absolute bottom-3 right-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-ember text-white shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
             onClick={handleSend}
-            disabled={isSending}
+            disabled={isSending || !value.trim()}
             aria-label={isSending ? "Thinking" : "Send"}
             title={isSending ? "Thinking" : "Send"}
           >
