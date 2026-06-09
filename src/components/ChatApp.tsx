@@ -340,8 +340,26 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
         }));
 
         let assistantText = "";
+        let thoughtsArray: string[] = [];
+
         try {
             for await (const event of streamChat({ chat_id: chatId, message: content })) {
+                if (event.sender === "log") {
+                    const cleanLog = event.text.replace(/^LOG\s*:\s*/i, ""); // Strip "LOG:" safely
+                    thoughtsArray = [...thoughtsArray, cleanLog];
+
+                    updateChatState(chatId, (prev) => {
+                        const updated = [...prev.messages];
+                        const current = updated[assistantIndex] ?? {
+                            role: "assistant" as const,
+                            content: "",
+                        };
+                        // Store logs inside the thoughts array property
+                        updated[assistantIndex] = { ...current, thoughts: thoughtsArray };
+                        return { ...prev, messages: updated, status: cleanLog };
+                    });
+                }
+
                 if (event.sender === "assistant") {
                     assistantText += event.text;
                     updateChatState(chatId, (prev) => {
@@ -350,16 +368,12 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
                             role: "assistant" as const,
                             content: "",
                         };
-                        updated[assistantIndex] = { ...current, content: assistantText };
+                        // Preserve thoughts while updating final content
+                        updated[assistantIndex] = { ...current, content: assistantText, thoughts: thoughtsArray };
                         return { ...prev, messages: updated };
                     });
                 }
-                if (event.sender === "log") {
-                    updateChatState(chatId, (prev) => ({
-                        ...prev,
-                        status: event.text.replace(/^LOG\s*/i, ""),
-                    }));
-                }
+
                 if (event.sender === "done") {
                     updateChatState(chatId, (prev) => ({ ...prev, status: event.text }));
                 }

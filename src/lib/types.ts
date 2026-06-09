@@ -4,6 +4,7 @@ export type ChatRole = "user" | "assistant" | "system";
 export interface ChatMessage {
   role: ChatRole;
   content: string;
+  thoughts?: string[];
 }
 
 export interface ChatSession {
