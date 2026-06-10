@@ -496,7 +496,7 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
             activeChatId={activeChatId}
             setActiveChatId={(id) => {
               setActiveChatId(id);
-              router.push(`/chat/${id}`);
+              window.history.pushState(null, "", `/chat/${id}`);
             }}
             isOpen={isChatListOpen}
             onDeleteChat={handleDeleteChat}

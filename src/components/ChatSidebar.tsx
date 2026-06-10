@@ -67,7 +67,7 @@ export function ChatSidebar({
                   key={chat.id}
                   role="button"
                   tabIndex={0}
-                  className={`group cursor-pointer w-full rounded-xl border px-4 py-3 text-left transition select-none focus:outline-none focus:ring-2 focus:ring-ember/40 ${isActive
+                  className={`group cursor-pointer w-full rounded-xl border px-4 py-3 text-left transition select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember/40 ${isActive
                     ? "border-ember/40 bg-ember/10"
                     : "border-sand-strong/70 bg-white hover:border-ember/30"
                     }`}
@@ -80,19 +80,19 @@ export function ChatSidebar({
                   }}
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-sm font-semibold text-ink truncate max-w-[140px]">
+                    <span className="text-sm font-semibold text-ink truncate min-w-0 flex-1">
                       {chat.title}
                     </span>
 
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[0.62rem] uppercase tracking-[0.2em] text-slate/60 group-hover:hidden">
+                      <span className="text-[0.62rem] uppercase tracking-[0.2em] text-slate/60 transition-opacity duration-200 group-hover:opacity-0">
                         {getRelativeTime(chat.lastActive)}
                       </span>
 
                       {/* This real <button> is now perfectly valid inside the outer <div> */}
                       <button
                         type="button"
-                        className="cursor-pointer hidden group-hover:flex items-center justify-center p-1 rounded-md text-red-600 hover:bg-red-50 duration-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+                        className="cursor-pointer flex items-center justify-center p-1 rounded-md text-red-600 hover:bg-red-50 duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
                         title="Delete chat"
                         onClick={(e) => {
                           e.stopPropagation();
