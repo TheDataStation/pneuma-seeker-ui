@@ -7,6 +7,19 @@ export interface ChatMessage {
   thoughts?: string[];
 }
 
+export interface ChatRuntime {
+  messages: ChatMessage[];
+  isStreaming: boolean;
+  status: string;
+  sidebar: ChatStateResponse | null;
+  sidebarStatus: string;
+  tableIndex: number;
+  provIndex: number;
+  executionResult: TableRow[];
+  queryInput: string;
+  queryResult: TableRow[];
+};
+
 export interface ChatSession {
   id: string;
   title: string;
