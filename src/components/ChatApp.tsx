@@ -59,9 +59,27 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [chatStateById, setChatStateById] = useState<Record<string, ChatRuntime>>({});
   const [activeChatId, setActiveChatId] = useState(initialChatId ?? "");
-  const [isChatListOpen, setIsChatListOpen] = useState(true);
   const [hasLoadedChats, setHasLoadedChats] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isChatListOpen, setIsChatListOpen] = useState(() => {
+    if (typeof window == "undefined") {
+      return true;
+    }
+
+    const saved = localStorage.getItem("isChatListOpen");
+    if (saved == null) {
+      return true;
+    }
+
+    return JSON.parse(saved);
+  });
+
+  useEffect(() => {
+    localStorage.setItem(
+      "isChatListOpen",
+      JSON.stringify(isChatListOpen)
+    );
+  }, [isChatListOpen]);
 
   const userMenuRef = useRef(null);
 
@@ -188,17 +206,17 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
     };
   }, [authChecked, user, handleUnauthorized, initialChatId]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const stored = window.localStorage.getItem(CHAT_LIST_PREF_KEY);
-    if (stored === null) return;
-    setIsChatListOpen(stored === "true");
-  }, []);
+  // useEffect(() => {
+  //   if (typeof window === "undefined") return;
+  //   const stored = window.localStorage.getItem(CHAT_LIST_PREF_KEY);
+  //   if (stored === null) return;
+  //   setIsChatListOpen(stored === "true");
+  // }, []);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(CHAT_LIST_PREF_KEY, String(isChatListOpen));
-  }, [isChatListOpen]);
+  // useEffect(() => {
+  //   if (typeof window === "undefined") return;
+  //   window.localStorage.setItem(CHAT_LIST_PREF_KEY, String(isChatListOpen));
+  // }, [isChatListOpen]);
 
   const refreshSidebar = useCallback(
     async (chatId: string, force: boolean = false) => {
