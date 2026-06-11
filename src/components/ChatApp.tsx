@@ -31,7 +31,7 @@ import type {
 import { clearStoredToken, generateUUID, saveBlob } from "@/lib/utils";
 import AppHeader from "./AppHeader";
 
-const CHAT_LIST_PREF_KEY = "pneuma:pref:chatListOpen";
+const HISTORY_CACHE_LIMIT = 10;
 
 
 const cloneMessages = (messages: ChatMessageType[]): ChatMessageType[] =>
@@ -62,6 +62,7 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
   const [activeChatId, setActiveChatId] = useState(initialChatId ?? "");
   const [hasLoadedChats, setHasLoadedChats] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const loadedHistoryIds = useRef<Set<string>>(new Set());
   const [isChatListOpen, setIsChatListOpen] = useState(() => {
     if (typeof window == "undefined") {
       return true;
@@ -163,41 +164,13 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
     let mounted = true;
 
     async function loadChats() {
-      try {
-        const response = await getAllChats(10, 0);
-        if (!mounted) return;
+      const response = await getAllChats(10, 0);
+      if (!mounted) return;
+      setChatSessions(response.chats ?? []);
+      setHasLoadedChats(true);
 
-        const sessions = response.chats || [];
-        setChatSessions(sessions);
-
-        const histories = await Promise.all(
-          sessions.map((chat) => getChatHistory(chat.id))
-        );
-
-        if (!mounted) return;
-
-        // Build the state map as a plain object (not updater fn) so the
-        // update is synchronous with setActiveChatId below — both land in
-        // the same React batch and the active chat is never missing.
-        const next: Record<string, ChatRuntime> = {};
-        sessions.forEach((chat, idx) => {
-          next[chat.id] = createChatRuntime(histories[idx]?.messages ?? []);
-        });
-        setChatStateById(next);
-
-        // Always respect the URL — do not override activeChatId when one
-        // was provided via props (i.e. the user opened /chat/<id>).
-        if (initialChatId) {
-          setActiveChatId(initialChatId);
-        }
-        // If no initialChatId (bare / route) leave activeChatId as "" so
-        // the empty-state welcome screen shows.
-
-        setHasLoadedChats(true);
-      } catch (error) {
-        if (handleUnauthorized(error)) return;
-        console.error(error);
-      }
+      // Set active chat from URL if present, don't load its history yet
+      if (initialChatId) setActiveChatId(initialChatId);
     }
 
     loadChats();
@@ -207,17 +180,39 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
     };
   }, [authChecked, user, handleUnauthorized, initialChatId]);
 
-  // useEffect(() => {
-  //   if (typeof window === "undefined") return;
-  //   const stored = window.localStorage.getItem(CHAT_LIST_PREF_KEY);
-  //   if (stored === null) return;
-  //   setIsChatListOpen(stored === "true");
-  // }, []);
+  useEffect(() => {
+    if (!hasLoadedChats || !activeChatId) return;
+    if (loadedHistoryIds.current.has(activeChatId)) {
+      // Re-insert to mark as most recently used
+      loadedHistoryIds.current.delete(activeChatId);
+      loadedHistoryIds.current.add(activeChatId);
+      return;
+    }
 
-  // useEffect(() => {
-  //   if (typeof window === "undefined") return;
-  //   window.localStorage.setItem(CHAT_LIST_PREF_KEY, String(isChatListOpen));
-  // }, [isChatListOpen]);
+    // Evict LRU entry if at capacity
+    if (loadedHistoryIds.current.size >= HISTORY_CACHE_LIMIT) {
+      const lruId = loadedHistoryIds.current.values().next().value;  // first = oldest
+      if (lruId !== undefined) {
+        loadedHistoryIds.current.delete(lruId);
+        setChatStateById((prev) => {
+          const next = { ...prev };
+          delete next[lruId];
+          return next;
+        });
+      }
+    }
+
+    loadedHistoryIds.current.add(activeChatId);
+
+    getChatHistory(activeChatId)
+      .then((data) => {
+        updateChatState(activeChatId, (prev) => ({
+          ...prev,
+          messages: cloneMessages(data?.messages ?? []),
+        }));
+      })
+      .catch((err) => handleUnauthorized(err));
+  }, [activeChatId, hasLoadedChats]);
 
   const refreshSidebar = useCallback(
     async (chatId: string, force: boolean = false) => {
