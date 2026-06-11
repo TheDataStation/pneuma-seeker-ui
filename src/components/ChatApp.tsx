@@ -83,11 +83,11 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
     );
   }, [isChatListOpen]);
 
-  const userMenuRef = useRef(null);
+  const userMenuRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
         setIsUserMenuOpen(false);
       }
     };
