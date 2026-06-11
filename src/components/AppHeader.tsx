@@ -13,6 +13,12 @@ type AppHeaderProps = {
   handleLogout: () => void;
 };
 
+const DATASETS = [
+  { value: "dataset1", label: "Dataset 1" },
+  { value: "dataset2", label: "Dataset 2" },
+  { value: "dataset3", label: "Dataset 3" },
+];
+
 export default function AppHeader({
   isChatListOpen,
   setIsChatListOpen,
@@ -92,6 +98,18 @@ export default function AppHeader({
             Pneuma-Seeker
           </h1>
         </div>
+
+        <select
+          name="dataset"
+          id="dataset"
+          className="cursor-pointer rounded-full border border-sand-strong/70 bg-white px-3 py-1.5 text-sm text-slate duration-300 hover:brightness-90 focus:outline-none"
+        >
+          {DATASETS.map((ds) => (
+            <option key={ds.value} value={ds.value}>
+              {ds.label}
+            </option>
+          ))}
+        </select>
       </div>
       <div className="relative" ref={menuRef}>
         <button
