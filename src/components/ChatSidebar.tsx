@@ -2,6 +2,7 @@
 "use client";
 
 import type { ChatSession } from "@/lib/types";
+import { getRelativeTime } from "@/lib/utils";
 
 interface ChatSidebarProps {
   chatSessions: ChatSession[];
@@ -9,30 +10,6 @@ interface ChatSidebarProps {
   setActiveChatId: (id: string) => void;
   isOpen: boolean;
   onDeleteChat: (id: string) => void;
-}
-
-const rtf = new Intl.RelativeTimeFormat("en", {
-  numeric: "auto",
-});
-
-function getRelativeTime(timestamp: string | number | Date): string {
-  const date = new Date(timestamp);
-  const diffSeconds = Math.round((date.getTime() - Date.now()) / 1000);
-  const units = [
-    { unit: "year", secs: 31536000 },
-    { unit: "month", secs: 2592000 },
-    { unit: "week", secs: 604800 },
-    { unit: "day", secs: 86400 },
-    { unit: "hour", secs: 3600 },
-    { unit: "minute", secs: 60 },
-    { unit: "second", secs: 1 },
-  ] as const;
-  for (const { unit, secs } of units) {
-    if (Math.abs(diffSeconds) >= secs || unit === "second") {
-      return rtf.format(Math.round(diffSeconds / secs), unit);
-    }
-  }
-  return "Now";
 }
 
 export function ChatSidebar({
@@ -62,7 +39,6 @@ export function ChatSidebar({
             chatSessions.map((chat) => {
               const isActive = chat.id === activeChatId;
               return (
-                /* Changed from <button> to <div> to resolve the hydration/nesting error */
                 <div
                   key={chat.id}
                   role="button"
@@ -89,7 +65,6 @@ export function ChatSidebar({
                         {getRelativeTime(chat.lastActive)}
                       </span>
 
-                      {/* This real <button> is now perfectly valid inside the outer <div> */}
                       <button
                         type="button"
                         className="cursor-pointer flex items-center justify-center p-1 rounded-md text-red-600 hover:bg-red-50 duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 opacity-0 transition-opacity duration-200 group-hover:opacity-100"

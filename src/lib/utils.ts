@@ -1,3 +1,7 @@
+const rtf = new Intl.RelativeTimeFormat("en", {
+  numeric: "auto",
+});
+
 export function formatTime(timestamp: number): string {
   const date = new Date(timestamp);
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -32,4 +36,24 @@ export async function downloadBlob(
   filename: string
 ): Promise<void> {
   saveBlob(await response.blob(), filename);
+}
+
+export function getRelativeTime(timestamp: string | number | Date): string {
+  const date = new Date(timestamp);
+  const diffSeconds = Math.round((date.getTime() - Date.now()) / 1000);
+  const units = [
+    { unit: "year", secs: 31536000 },
+    { unit: "month", secs: 2592000 },
+    { unit: "week", secs: 604800 },
+    { unit: "day", secs: 86400 },
+    { unit: "hour", secs: 3600 },
+    { unit: "minute", secs: 60 },
+    { unit: "second", secs: 1 },
+  ] as const;
+  for (const { unit, secs } of units) {
+    if (Math.abs(diffSeconds) >= secs || unit === "second") {
+      return rtf.format(Math.round(diffSeconds / secs), unit);
+    }
+  }
+  return "Now";
 }
