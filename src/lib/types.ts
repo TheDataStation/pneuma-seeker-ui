@@ -101,6 +101,10 @@ export interface ChatRequest {
   files?: unknown[];
 }
 
+export interface AccessibleDatasetResponse {
+  datasets: string[];
+}
+
 export interface ChatHistoryResponse {
   user_id: string;
   chat_id: string;

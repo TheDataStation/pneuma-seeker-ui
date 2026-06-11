@@ -13,6 +13,7 @@ import type {
   TableRow,
   ChatStreamEvent,
   ChatListResponse,
+  AccessibleDatasetResponse,
 } from "./types";
 
 const DEFAULT_BASE =
@@ -239,6 +240,18 @@ export async function getChatState(
   return request<ChatStateResponse>(`/chat/state/${chat_id}`, {
     method: "GET",
   }, token);
+}
+
+export async function getAccessibleDatasets(
+  token?: string,
+): Promise<AccessibleDatasetResponse> {
+  // Temporarily returnining hardcoded datasets until the backend endpoint is implemented
+  return {
+    datasets: ["marketo", "buysite"],
+  };
+  // return request<AccessibleDatasetResponse>(`/chat/datasets`, {
+  //   method: "GET",
+  // }, token);
 }
 
 export async function getChatHistory(

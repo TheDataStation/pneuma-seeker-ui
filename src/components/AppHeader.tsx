@@ -1,6 +1,7 @@
 // src/components/AppHeader.tsx
+import { getAccessibleDatasets } from "@/lib/api";
 import { User } from "@/lib/types";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type AppHeaderProps = {
   isChatListOpen: boolean;
@@ -13,12 +14,6 @@ type AppHeaderProps = {
   handleLogout: () => void;
 };
 
-const DATASETS = [
-  { value: "dataset1", label: "Dataset 1" },
-  { value: "dataset2", label: "Dataset 2" },
-  { value: "dataset3", label: "Dataset 3" },
-];
-
 export default function AppHeader({
   isChatListOpen,
   setIsChatListOpen,
@@ -29,7 +24,15 @@ export default function AppHeader({
   isLoggingOut,
   handleLogout,
 }: AppHeaderProps) {
+  const [datasets, setDatasets] = useState<string[]>([]);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Load accessible datasets on mount (for the dataset dropdown)
+  useEffect(() => {
+    getAccessibleDatasets().then((res) => {
+      setDatasets(res.datasets);
+    });
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -104,9 +107,9 @@ export default function AppHeader({
           id="dataset"
           className="cursor-pointer rounded-full border border-sand-strong/70 bg-white px-3 py-1.5 text-sm text-slate duration-300 hover:brightness-90 focus:outline-none"
         >
-          {DATASETS.map((ds) => (
-            <option key={ds.value} value={ds.value}>
-              {ds.label}
+          {datasets.map((ds) => (
+            <option key={ds} value={ds}>
+              {ds}
             </option>
           ))}
         </select>
