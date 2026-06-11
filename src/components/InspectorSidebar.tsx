@@ -13,6 +13,7 @@ interface InspectorSidebarProps {
   executionResult: TableRow[];
   queryInput: string;
   queryResult: TableRow[];
+  sidebarStatus: string;
   updateChatState: (chatId: string, updater: (current: any) => any) => void;
   onExecute: () => Promise<void>;
   onTableDownload: () => Promise<void>;
@@ -21,7 +22,8 @@ interface InspectorSidebarProps {
 
 export function hasSidebarContent(sidebar: ChatStateResponse | null): boolean {
   if (!sidebar) return false;
-  const hasRetrievedTables = Object.keys(sidebar.retrieved_tables ?? {}).length > 0;
+  const hasRetrievedTables =
+    Object.keys(sidebar.retrieved_tables ?? {}).length > 0;
   const hasPrepareData = (sidebar.prov_steps ?? []).length > 0;
   const hasViewsAndScript =
     (sidebar.state?.T && Object.keys(sidebar.state.T).length > 0) ||
@@ -63,7 +65,9 @@ function MaterializeViewsStep({
           <TablePreview
             title={currentView[0]}
             rows={currentView[1] as TableRow[]}
-            columnDescriptions={sidebar?.state?.column_descriptions?.[currentView[0]] ?? {}}
+            columnDescriptions={
+              sidebar?.state?.column_descriptions?.[currentView[0]] ?? {}
+            }
           />
           {targetViews.length > 1 && (
             <div className="flex items-center justify-between">
@@ -79,7 +83,11 @@ function MaterializeViewsStep({
               </span>
               <button
                 className="cursor-pointer rounded-full border border-sand-strong/70 bg-white px-3 py-1 text-xs font-semibold text-slate disabled:opacity-50"
-                onClick={() => setTargetViewIndex((i) => Math.min(i + 1, targetViews.length - 1))}
+                onClick={() =>
+                  setTargetViewIndex((i) =>
+                    Math.min(i + 1, targetViews.length - 1),
+                  )
+                }
                 disabled={targetViewIndex >= targetViews.length - 1}
               >
                 Next
@@ -173,7 +181,11 @@ interface ExecuteScriptStepProps {
   onExecute: () => Promise<void>;
 }
 
-function ExecuteScriptStep({ sidebar, executionResult, onExecute }: ExecuteScriptStepProps) {
+function ExecuteScriptStep({
+  sidebar,
+  executionResult,
+  onExecute,
+}: ExecuteScriptStepProps) {
   const [copied, setCopied] = useState(false);
   const script = sidebar?.state?.S?.trim() || "";
 
@@ -224,12 +236,15 @@ export function InspectorSidebar({
   executionResult,
   queryInput,
   queryResult,
+  sidebarStatus,
   updateChatState,
   onExecute,
   onTableDownload,
   onProvenanceDownload,
 }: InspectorSidebarProps) {
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+  const [expandedSections, setExpandedSections] = useState<
+    Record<string, boolean>
+  >({
     retrieveTables: false,
     materializeViews: false,
     executeScript: false,
@@ -282,7 +297,10 @@ export function InspectorSidebar({
               onClick={() =>
                 updateChatState(activeChatId, (prev) => ({
                   ...prev,
-                  tableIndex: Math.min(prev.tableIndex + 1, retrievedTableNames.length - 1),
+                  tableIndex: Math.min(
+                    prev.tableIndex + 1,
+                    retrievedTableNames.length - 1,
+                  ),
                 }))
               }
               disabled={tableIndex >= retrievedTableNames.length - 1}
@@ -330,6 +348,12 @@ export function InspectorSidebar({
 
   return (
     <aside className="flex h-full min-h-0 flex-col gap-6 overflow-y-auto pr-2">
+      {sidebarStatus === "Refreshing..." && steps.length === 0 && (
+        <div className="flex items-center gap-2 rounded-2xl border border-sand-strong/70 bg-white px-4 py-2.5 text-xs text-slate/60">
+          <span className="inline-block h-2 w-2 rounded-full bg-ember animate-pulse" />
+          Loading analysis state…
+        </div>
+      )}
       <div className="px-1">
         <h2 className="font-display text-2xl">Analysis Pipeline</h2>
         <p className="mt-1 text-sm text-slate/60">

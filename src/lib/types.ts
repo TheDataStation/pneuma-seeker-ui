@@ -18,6 +18,7 @@ export interface ChatRuntime {
   executionResult: TableRow[];
   queryInput: string;
   queryResult: TableRow[];
+  isHistoryLoading: boolean;
 };
 
 export interface ChatSession {

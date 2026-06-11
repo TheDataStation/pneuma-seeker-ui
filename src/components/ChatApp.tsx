@@ -6,7 +6,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { ChatSidebar } from "@/components/ChatSidebar";
 import { MainChatArea } from "@/components/MainChatArea";
-import { InspectorSidebar, hasSidebarContent } from "@/components/InspectorSidebar";
+import {
+  InspectorSidebar,
+  hasSidebarContent,
+} from "@/components/InspectorSidebar";
 
 import {
   ApiError,
@@ -33,7 +36,6 @@ import AppHeader from "./AppHeader";
 
 const HISTORY_CACHE_LIMIT = 10;
 
-
 const cloneMessages = (messages: ChatMessageType[]): ChatMessageType[] =>
   messages.map((message) => ({ ...message }));
 
@@ -48,9 +50,8 @@ const createChatRuntime = (messages: ChatMessageType[] = []): ChatRuntime => ({
   executionResult: [],
   queryInput: "",
   queryResult: [],
+  isHistoryLoading: false,
 });
-
-
 
 export function ChatApp({ initialChatId }: { initialChatId?: string }) {
   const router = useRouter();
@@ -58,7 +59,9 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
   const [user, setUser] = useState<User | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
-  const [chatStateById, setChatStateById] = useState<Record<string, ChatRuntime>>({});
+  const [chatStateById, setChatStateById] = useState<
+    Record<string, ChatRuntime>
+  >({});
   const [activeChatId, setActiveChatId] = useState(initialChatId ?? "");
   const [hasLoadedChats, setHasLoadedChats] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -77,17 +80,17 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
   });
 
   useEffect(() => {
-    localStorage.setItem(
-      "isChatListOpen",
-      JSON.stringify(isChatListOpen)
-    );
+    localStorage.setItem("isChatListOpen", JSON.stringify(isChatListOpen));
   }, [isChatListOpen]);
 
   const userMenuRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(e.target as Node)
+      ) {
         setIsUserMenuOpen(false);
       }
     };
@@ -110,7 +113,7 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
         return { ...prev, [chatId]: updated };
       });
     },
-    []
+    [],
   );
 
   const redirectToLogin = useCallback(() => {
@@ -126,7 +129,7 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
       }
       return false;
     },
-    [redirectToLogin]
+    [redirectToLogin],
   );
 
   useEffect(() => {
@@ -191,7 +194,7 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
 
     // Evict LRU entry if at capacity
     if (loadedHistoryIds.current.size >= HISTORY_CACHE_LIMIT) {
-      const lruId = loadedHistoryIds.current.values().next().value;  // first = oldest
+      const lruId = loadedHistoryIds.current.values().next().value; // first = oldest
       if (lruId !== undefined) {
         loadedHistoryIds.current.delete(lruId);
         setChatStateById((prev) => {
@@ -204,14 +207,26 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
 
     loadedHistoryIds.current.add(activeChatId);
 
+    updateChatState(activeChatId, (prev) => ({
+      ...prev,
+      isHistoryLoading: true,
+    }));
+
     getChatHistory(activeChatId)
       .then((data) => {
         updateChatState(activeChatId, (prev) => ({
           ...prev,
           messages: cloneMessages(data?.messages ?? []),
+          isHistoryLoading: false,
         }));
       })
-      .catch((err) => handleUnauthorized(err));
+      .catch((err) => {
+        updateChatState(activeChatId, (prev) => ({
+          ...prev,
+          isHistoryLoading: false,
+        }));
+        handleUnauthorized(err);
+      });
   }, [activeChatId, hasLoadedChats]);
 
   const refreshSidebar = useCallback(
@@ -241,7 +256,7 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
         }));
       }
     },
-    [handleUnauthorized, updateChatState, chatSessions]
+    [handleUnauthorized, updateChatState, chatSessions],
   );
 
   useEffect(() => {
@@ -253,31 +268,33 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
     messages,
     isStreaming,
     sidebar,
+    sidebarStatus,
     tableIndex,
     provIndex,
     executionResult,
     queryInput,
     queryResult,
+    isHistoryLoading,
   } = activeChat;
 
   const retrievedTables = sidebar?.retrieved_tables ?? {};
   const retrievedTableNames = useMemo(
     () => Object.keys(retrievedTables),
-    [retrievedTables]
+    [retrievedTables],
   );
   const provSteps = sidebar?.prov_steps ?? [];
 
   useEffect(() => {
     if (!activeChatId) return;
     updateChatState(activeChatId, (prev) =>
-      prev.tableIndex === 0 ? prev : { ...prev, tableIndex: 0 }
+      prev.tableIndex === 0 ? prev : { ...prev, tableIndex: 0 },
     );
   }, [activeChatId, retrievedTableNames.length, updateChatState]);
 
   useEffect(() => {
     if (!activeChatId) return;
     updateChatState(activeChatId, (prev) =>
-      prev.provIndex === 0 ? prev : { ...prev, provIndex: 0 }
+      prev.provIndex === 0 ? prev : { ...prev, provIndex: 0 },
     );
   }, [activeChatId, provSteps.length, updateChatState]);
 
@@ -336,7 +353,10 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
     let thoughtsArray: string[] = [];
 
     try {
-      for await (const event of streamChat({ chat_id: chatId, message: content })) {
+      for await (const event of streamChat({
+        chat_id: chatId,
+        message: content,
+      })) {
         if (event.sender === "log") {
           const cleanLog = event.text.replace(/^LOG\s*:\s*/i, ""); // Strip "LOG:" safely
           thoughtsArray = [...thoughtsArray, cleanLog];
@@ -362,7 +382,11 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
               content: "",
             };
             // Preserve thoughts while updating final content
-            updated[assistantIndex] = { ...current, content: assistantText, thoughts: thoughtsArray };
+            updated[assistantIndex] = {
+              ...current,
+              content: assistantText,
+              thoughts: thoughtsArray,
+            };
             return { ...prev, messages: updated };
           });
         }
@@ -373,7 +397,10 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
       }
     } catch (error) {
       if (handleUnauthorized(error)) return;
-      updateChatState(chatId, (prev) => ({ ...prev, status: "Stream failed." }));
+      updateChatState(chatId, (prev) => ({
+        ...prev,
+        status: "Stream failed.",
+      }));
     } finally {
       updateChatState(chatId, (prev) => ({ ...prev, isStreaming: false }));
       refreshSidebar(chatId, true);
@@ -387,7 +414,9 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
         await deleteChat(chatId);
 
         // 2. Remove from the local chat sessions list
-        setChatSessions((prev) => prev.filter((session) => session.id !== chatId));
+        setChatSessions((prev) =>
+          prev.filter((session) => session.id !== chatId),
+        );
 
         // 3. Clear local runtime track state
         setChatStateById((prev) => {
@@ -407,13 +436,16 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
         alert("Could not delete the chat session. Please try again.");
       }
     },
-    [activeChatId, router, handleUnauthorized]
+    [activeChatId, router, handleUnauthorized],
   );
 
   const handleExecute = async () => {
     const chatId = activeChatId;
     if (!chatId) return;
-    updateChatState(chatId, (prev) => ({ ...prev, status: "Executing script..." }));
+    updateChatState(chatId, (prev) => ({
+      ...prev,
+      status: "Executing script...",
+    }));
     try {
       const rows = await executeCode(chatId);
       updateChatState(chatId, (prev) => ({
@@ -423,7 +455,10 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
       }));
     } catch (error) {
       if (handleUnauthorized(error)) return;
-      updateChatState(chatId, (prev) => ({ ...prev, status: "Execution failed." }));
+      updateChatState(chatId, (prev) => ({
+        ...prev,
+        status: "Execution failed.",
+      }));
     }
   };
 
@@ -437,10 +472,16 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
     try {
       const blob = await downloadTargetViews(chatId);
       saveBlob(blob, `${chatId}_tables.zip`);
-      updateChatState(chatId, (prev) => ({ ...prev, status: "Tables downloaded." }));
+      updateChatState(chatId, (prev) => ({
+        ...prev,
+        status: "Tables downloaded.",
+      }));
     } catch (error) {
       if (handleUnauthorized(error)) return;
-      updateChatState(chatId, (prev) => ({ ...prev, status: "Table export failed." }));
+      updateChatState(chatId, (prev) => ({
+        ...prev,
+        status: "Table export failed.",
+      }));
     }
   };
 
@@ -480,12 +521,19 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
     );
   }
 
-  const showInspector = hasSidebarContent(sidebar);
+  // Also show the column if sidebar is actively loading for a known chat
+  const showInspector =
+    hasSidebarContent(sidebar) ||
+    (!!activeChatId &&
+      chatSessions.some((s) => s.id === activeChatId) &&
+      activeChat.sidebarStatus === "Refreshing...");
 
   return (
     <div className="flex h-screen flex-1 flex-col overflow-hidden">
       <div className="app-shell flex flex-1 min-h-0 flex-col overflow-hidden border border-white/70 p-3 lg:p-4 fade-in">
-        <div className={`flex min-h-0 flex-1 ${isChatListOpen ? "gap-6" : "gap-0"}`}>
+        <div
+          className={`flex min-h-0 flex-1 ${isChatListOpen ? "gap-6" : "gap-0"}`}
+        >
           <ChatSidebar
             chatSessions={chatSessions}
             activeChatId={activeChatId}
@@ -510,12 +558,14 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
             />
 
             <div
-              className={`mt-8 grid min-h-0 flex-1 gap-6 ${showInspector ? "lg:grid-cols-[minmax(0,1fr)_420px]" : ""
-                }`}
+              className={`mt-8 grid min-h-0 flex-1 gap-6 ${
+                showInspector ? "lg:grid-cols-[minmax(0,1fr)_420px]" : ""
+              }`}
             >
               <MainChatArea
                 messages={messages}
                 isStreaming={isStreaming}
+                isHistoryLoading={isHistoryLoading}
                 onSend={handleSend}
               />
 
@@ -532,6 +582,7 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
                   onExecute={handleExecute}
                   onTableDownload={handleTableDownload}
                   onProvenanceDownload={handleProvenanceDownload}
+                  sidebarStatus={sidebarStatus}
                 />
               )}
             </div>
