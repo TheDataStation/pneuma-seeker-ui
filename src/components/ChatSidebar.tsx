@@ -61,7 +61,7 @@ export function ChatSidebar({
                     </span>
 
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[0.62rem] uppercase tracking-[0.2em] text-slate/60 transition-opacity duration-200 group-hover:opacity-0">
+                      <span className="text-[0.62rem] uppercase tracking-[0.2em] text-slate/60 transition-opacity duration-200">
                         {getRelativeTime(chat.lastActive)}
                       </span>
 
