@@ -262,12 +262,15 @@ export async function getChatHistory(
 export async function getAllChats(
   limit = 10,
   offset = 0,
+  query?: string,
   token?: string,
 ): Promise<ChatListResponse> {
+  const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+  if (query) params.set("query", query);
   return request<ChatListResponse>(
-    `/chat/sessions?limit=${limit}&offset=${offset}`, 
-    { method: "GET" }, 
-    token
+    `/chat/sessions?${params}`,
+    { method: "GET" },
+    token,
   );
 }
 

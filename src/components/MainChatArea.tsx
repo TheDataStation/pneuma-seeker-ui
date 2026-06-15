@@ -9,6 +9,7 @@ interface MainChatAreaProps {
   isStreaming: boolean;
   isHistoryLoading: boolean;
   onSend: (content: string) => Promise<void>;
+  chatKey: string;
 }
 
 function HistoryLoadingSkeleton() {
@@ -26,10 +27,10 @@ function HistoryLoadingSkeleton() {
   );
 }
 
-export function MainChatArea({ messages, isStreaming, isHistoryLoading, onSend }: MainChatAreaProps) {
+export function MainChatArea({ messages, isStreaming, isHistoryLoading, onSend, chatKey }: MainChatAreaProps) {
   return (
     <main className="flex h-full min-h-0 flex-col gap-6">
-      <div className="mt-6 flex min-h-0 flex-1 flex-col overflow-y-auto pr-2">
+      <div key={chatKey} className="mt-6 flex min-h-0 flex-1 flex-col overflow-y-auto pr-2 fade-in">
         {isHistoryLoading ? <HistoryLoadingSkeleton /> : <ChatMessageList messages={messages} />}
       </div>
       <ChatComposer isSending={isStreaming} onSend={onSend} />

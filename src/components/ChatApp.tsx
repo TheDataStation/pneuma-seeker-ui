@@ -60,6 +60,10 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
   const [user, setUser] = useState<User | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
+  const [chatHasMore, setChatHasMore] = useState(false);
+  const [chatNextOffset, setChatNextOffset] = useState<number | null>(null);
+  const [isChatListLoading, setIsChatListLoading] = useState(false);
+  const [chatSearchQuery, setChatSearchQuery] = useState("");
   const [chatStateById, setChatStateById] = useState<
     Record<string, ChatRuntime>
   >({});
@@ -170,22 +174,62 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
     };
   }, [handleUnauthorized, redirectToLogin]);
 
+  const fetchChatList = useCallback(
+    async (query: string, offset: number, append: boolean) => {
+      setIsChatListLoading(true);
+      try {
+        const response = await getAllChats(10, offset, query || undefined);
+        const newChats = response.chats ?? [];
+        setChatSessions((prev) => (append ? [...prev, ...newChats] : newChats));
+        setChatHasMore(response.has_more);
+        setChatNextOffset(response.next_offset ?? null);
+      } catch (error) {
+        handleUnauthorized(error);
+      } finally {
+        setIsChatListLoading(false);
+      }
+    },
+    [handleUnauthorized],
+  );
+
+  const handleLoadMoreChats = useCallback(() => {
+    if (!isChatListLoading && chatHasMore && chatNextOffset !== null) {
+      fetchChatList(chatSearchQuery, chatNextOffset, true);
+    }
+  }, [isChatListLoading, chatHasMore, chatNextOffset, chatSearchQuery, fetchChatList]);
+
+  const handleChatSearch = useCallback(
+    (query: string) => {
+      setChatSearchQuery(query);
+      fetchChatList(query, 0, false);
+    },
+    [fetchChatList],
+  );
+
   useEffect(() => {
     if (!authChecked || !user) return;
 
     let mounted = true;
 
-    async function loadChats() {
-      const response = await getAllChats(10, 0);
-      if (!mounted) return;
-      setChatSessions(response.chats ?? []);
-      setHasLoadedChats(true);
-
-      // Set active chat from URL if present, don't load its history yet
-      if (initialChatId) setActiveChatId(initialChatId);
+    async function initialLoad() {
+      setIsChatListLoading(true);
+      try {
+        const response = await getAllChats(10, 0);
+        if (!mounted) return;
+        setChatSessions(response.chats ?? []);
+        setChatHasMore(response.has_more);
+        setChatNextOffset(response.next_offset ?? null);
+        setHasLoadedChats(true);
+        if (initialChatId) setActiveChatId(initialChatId);
+      } catch (error) {
+        if (!mounted) return;
+        handleUnauthorized(error);
+      } finally {
+        if (mounted) setIsChatListLoading(false);
+      }
     }
 
-    loadChats();
+    initialLoad();
 
     return () => {
       mounted = false;
@@ -416,6 +460,20 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
     } finally {
       updateChatState(chatId, (prev) => ({ ...prev, isStreaming: false }));
       refreshSidebar(chatId, true);
+      // Sync with backend's persisted state after stream ends (success or error).
+      // The backend always persists in its finally block before the stream closes,
+      // so this read reflects the authoritative saved result.
+      getChatHistory(chatId)
+        .then((data) => {
+          if (data.messages && data.messages.length > 0) {
+            updateChatState(chatId, (current) => ({
+              ...current,
+              messages: cloneMessages(data.messages ?? []),
+              dataset: data.dataset_name ?? current.dataset,
+            }));
+          }
+        })
+        .catch(() => {});
     }
   };
 
@@ -555,6 +613,10 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
             }}
             isOpen={isChatListOpen}
             onDeleteChat={handleDeleteChat}
+            onSearch={handleChatSearch}
+            hasMore={chatHasMore}
+            onLoadMore={handleLoadMoreChats}
+            isLoading={isChatListLoading}
           />
 
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -583,6 +645,7 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
                 isStreaming={isStreaming}
                 isHistoryLoading={isHistoryLoading}
                 onSend={handleSend}
+                chatKey={activeChatId}
               />
 
               {showInspector && (
