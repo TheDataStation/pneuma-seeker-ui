@@ -1,37 +1,32 @@
-# Pneuma Seeker UI
+# Pneuma-Seeker UI
 
-Next.js 16 (App Router) frontend for the Pneuma Seeker chat experience. The sidebar is rendered natively and pulls state from the API for fast updates.
+The frontend interface for [Pneuma-Seeker](https://github.com/TheDataStation/pneuma-seeker).
 
 ## Prerequisites
 
-- Node.js 24
-- Pneuma backend running (default port 8000)
+* **Docker** (for containerized deployment)
+* **Node.js 20+** (for local development)
+* A running **Pneuma-Seeker Backend** instance
 
-## Development
+Ensure your backend API URL is correctly configured in `config.ts` (or your local environment variables) before proceeding.
+
+---
+
+## Deployment (Docker)
 
 ```bash
-npm install
-npm run dev
+docker compose up -d
 ```
 
-## Testing
+## Local Development
 
 ```bash
+# Install dependencies
+npm install
+
+# Start the development server
+npm run dev
+
+# Run the test suite
 npm test
 ```
-
-Open the dev server in your browser on port 3000.
-
-## Configuration
-
-Set the backend base URL with:
-
-```bash
-NEXT_PUBLIC_PNEUMA_API_BASE=YOUR_BACKEND_BASE_URL
-```
-
-## Notes
-
-- Chat history and sidebar state are cached in localStorage for resilience.
-- Sidebar state is loaded from the combined state endpoint.
-- Export actions call the existing backend endpoints for PDFs, tables, and provenance scripts.
