@@ -91,12 +91,19 @@ export function ChatMessage({ message, isLatestAssistant = false }: { message: C
       <div
         className={`max-w-[80%] rounded-xl border px-5 py-4 text-sm leading-relaxed shadow-sm ${bubble}`}
       >
-        {/* Render thoughts at the top of the assistant bubble if they exist */}
-        {!isUser && (
-          <ThinkingProcess 
-            thoughts={message.thoughts} 
-            isLatestAssistant={isLatestAssistant} 
-          />
+        {/* Fade thoughts out once final answer arrives instead of abruptly removing */}
+        {!isUser && message.thoughts && message.thoughts.length > 0 && (
+          <div
+            data-testid="thoughts-wrapper"
+            className={`overflow-hidden transition-all duration-500 ease-in-out ${
+              message.content ? "max-h-0 opacity-0" : "max-h-[1000px] opacity-100"
+            }`}
+          >
+            <ThinkingProcess
+              thoughts={message.thoughts}
+              isLatestAssistant={isLatestAssistant}
+            />
+          </div>
         )}
         
         {/* Render final message content */}

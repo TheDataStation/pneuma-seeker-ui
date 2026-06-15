@@ -17,7 +17,7 @@ describe("ChatMessage – user bubble", () => {
     render(
       <ChatMessage
         message={{ role: "user", content: "Hi", thoughts: ["ignore me"] }}
-      />
+      />,
     );
     expect(screen.queryByText(/Thinking Process/i)).not.toBeInTheDocument();
   });
@@ -25,47 +25,63 @@ describe("ChatMessage – user bubble", () => {
 
 describe("ChatMessage – assistant bubble", () => {
   it("renders message content", () => {
-    render(<ChatMessage message={{ role: "assistant", content: "Hi there" }} />);
+    render(
+      <ChatMessage message={{ role: "assistant", content: "Hi there" }} />,
+    );
     expect(screen.getByText("Hi there")).toBeInTheDocument();
   });
 
   it("shows bounce indicator when content is empty (mid-stream)", () => {
     const { container } = render(
-      <ChatMessage message={{ role: "assistant", content: "" }} />
+      <ChatMessage message={{ role: "assistant", content: "" }} />,
     );
     expect(container.querySelector(".animate-bounce")).toBeInTheDocument();
   });
 
   it("does not show bounce indicator when content is present", () => {
     const { container } = render(
-      <ChatMessage message={{ role: "assistant", content: "Done" }} />
+      <ChatMessage message={{ role: "assistant", content: "Done" }} />,
     );
     expect(container.querySelector(".animate-bounce")).not.toBeInTheDocument();
   });
 });
 
 describe("ChatMessage – Thinking Process", () => {
-  const message: ChatMessageType = {
+  // Thoughts are only visible while content is still empty (streaming phase)
+  const streamingMessage: ChatMessageType = {
     role: "assistant",
-    content: "Final answer",
+    content: "",
     thoughts: ["Step 1", "Step 2"],
   };
 
-  it("renders thoughts when provided", () => {
-    render(<ChatMessage message={message} />);
+  it("renders thoughts while final answer is pending (content empty)", () => {
+    render(<ChatMessage message={streamingMessage} />);
     expect(screen.getByText(/Thinking Process \(2\)/i)).toBeInTheDocument();
     expect(screen.getByText(/Step 1/)).toBeInTheDocument();
     expect(screen.getByText(/Step 2/)).toBeInTheDocument();
   });
 
+  it("collapses thoughts via CSS transition once final answer arrives", () => {
+    render(
+      <ChatMessage
+        message={{ role: "assistant", content: "Final answer", thoughts: ["Step 1"] }}
+      />,
+    );
+    // Element stays in DOM for the fade animation; CSS classes drive the collapse
+    const wrapper = screen.getByTestId("thoughts-wrapper");
+    expect(wrapper).toHaveClass("opacity-0");
+    expect(wrapper).toHaveClass("max-h-0");
+    expect(screen.getByText("Final answer")).toBeInTheDocument();
+  });
+
   it("is expanded by default", () => {
-    render(<ChatMessage message={message} />);
+    render(<ChatMessage message={streamingMessage} />);
     expect(screen.getByText(/Step 1/)).toBeVisible();
   });
 
   it("collapses thoughts on toggle click", async () => {
     const user = userEvent.setup();
-    render(<ChatMessage message={message} />);
+    render(<ChatMessage message={streamingMessage} />);
 
     await user.click(screen.getByRole("button", { name: /Thinking Process/i }));
     expect(screen.queryByText(/Step 1/)).not.toBeInTheDocument();
@@ -73,7 +89,7 @@ describe("ChatMessage – Thinking Process", () => {
 
   it("re-expands thoughts on second toggle click", async () => {
     const user = userEvent.setup();
-    render(<ChatMessage message={message} />);
+    render(<ChatMessage message={streamingMessage} />);
     const btn = screen.getByRole("button", { name: /Thinking Process/i });
 
     await user.click(btn);
@@ -83,22 +99,21 @@ describe("ChatMessage – Thinking Process", () => {
 
   it("pulses the last log line when isLatestAssistant is true", () => {
     const { container } = render(
-      <ChatMessage message={message} isLatestAssistant={true} />
+      <ChatMessage message={streamingMessage} isLatestAssistant={true} />,
     );
-    const lastThought = container.querySelectorAll(".animate-pulse");
-    expect(lastThought.length).toBeGreaterThan(0);
+    expect(container.querySelectorAll(".animate-pulse").length).toBeGreaterThan(0);
   });
 
   it("does not pulse when isLatestAssistant is false", () => {
     const { container } = render(
-      <ChatMessage message={message} isLatestAssistant={false} />
+      <ChatMessage message={streamingMessage} isLatestAssistant={false} />,
     );
     expect(container.querySelector(".animate-pulse")).not.toBeInTheDocument();
   });
 
   it("renders nothing when thoughts array is empty", () => {
     render(
-      <ChatMessage message={{ role: "assistant", content: "Done", thoughts: [] }} />
+      <ChatMessage message={{ role: "assistant", content: "", thoughts: [] }} />,
     );
     expect(screen.queryByText(/Thinking Process/i)).not.toBeInTheDocument();
   });
@@ -128,13 +143,13 @@ describe("ChatMessageList", () => {
   });
 
   it("marks only the last assistant message as isLatestAssistant", () => {
-    // The last assistant gets .animate-pulse on its last thought; earlier ones do not.
+    // Use empty content so thoughts are rendered (thoughts hide once final answer arrives)
     const messages: ChatMessageType[] = [
-      { role: "assistant", content: "First", thoughts: ["t1"] },
-      { role: "assistant", content: "Second", thoughts: ["t2"] },
+      { role: "assistant", content: "", thoughts: ["t1"] },
+      { role: "assistant", content: "", thoughts: ["t2"] },
     ];
     const { container } = render(<ChatMessageList messages={messages} />);
-    // Only the second assistant bubble should pulse its last thought
+    // Only the last bubble's thought should pulse
     const pulses = container.querySelectorAll(".animate-pulse");
     expect(pulses.length).toBe(1);
   });
