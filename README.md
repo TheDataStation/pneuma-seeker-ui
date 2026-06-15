@@ -14,6 +14,12 @@ npm install
 npm run dev
 ```
 
+## Testing
+
+```bash
+npm test
+```
+
 Open the dev server in your browser on port 3000.
 
 ## Configuration
