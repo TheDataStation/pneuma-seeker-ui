@@ -12,6 +12,10 @@ type AppHeaderProps = {
   user: User;
   isLoggingOut: boolean;
   handleLogout: () => void;
+  selectedDataset: string;
+  accessibleDatasets: string[];
+  handleDatasetChange: (dataset: string) => void;
+  isDatasetLocked: boolean;
 };
 
 export default function AppHeader({
@@ -23,16 +27,12 @@ export default function AppHeader({
   user,
   isLoggingOut,
   handleLogout,
+  selectedDataset,
+  accessibleDatasets,
+  handleDatasetChange,
+  isDatasetLocked,
 }: AppHeaderProps) {
-  const [datasets, setDatasets] = useState<string[]>([]);
   const menuRef = useRef<HTMLDivElement>(null);
-
-  // Load accessible datasets on mount (for the dataset dropdown)
-  useEffect(() => {
-    getAccessibleDatasets().then((res) => {
-      setDatasets(res.datasets);
-    });
-  }, []);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -105,9 +105,14 @@ export default function AppHeader({
         <select
           name="dataset"
           id="dataset"
+          value={selectedDataset}
+          onChange={(e) => {
+            handleDatasetChange(e.target.value);
+          }}
+          disabled={isDatasetLocked}
           className="cursor-pointer rounded-full border border-sand-strong/70 bg-white px-3 py-1.5 text-sm text-slate duration-300 hover:brightness-90 focus:outline-none"
         >
-          {datasets.map((ds) => (
+          {accessibleDatasets.map((ds) => (
             <option key={ds} value={ds}>
               {ds}
             </option>

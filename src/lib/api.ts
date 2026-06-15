@@ -245,13 +245,9 @@ export async function getChatState(
 export async function getAccessibleDatasets(
   token?: string,
 ): Promise<AccessibleDatasetResponse> {
-  // Temporarily returnining hardcoded datasets until the backend endpoint is implemented
-  return {
-    datasets: ["marketo", "buysite"],
-  };
-  // return request<AccessibleDatasetResponse>(`/chat/datasets`, {
-  //   method: "GET",
-  // }, token);
+  return request<AccessibleDatasetResponse>(`/chat/datasets`, {
+    method: "GET",
+  }, token);
 }
 
 export async function getChatHistory(

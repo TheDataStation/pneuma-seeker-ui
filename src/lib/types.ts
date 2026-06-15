@@ -9,6 +9,7 @@ export interface ChatMessage {
 
 export interface ChatRuntime {
   messages: ChatMessage[];
+  dataset: string | null;
   isStreaming: boolean;
   status: string;
   sidebar: ChatStateResponse | null;
@@ -99,6 +100,7 @@ export interface ChatRequest {
   message: string;
   data_source?: string | null;
   files?: unknown[];
+  dataset_name?: string | null;
 }
 
 export interface AccessibleDatasetResponse {
@@ -109,6 +111,7 @@ export interface ChatHistoryResponse {
   user_id: string;
   chat_id: string;
   messages: ChatMessage[];
+  dataset_name?: string | null;
 }
 
 export interface ProvenanceNode {

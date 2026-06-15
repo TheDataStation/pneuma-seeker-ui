@@ -23,6 +23,7 @@ import {
   logout,
   streamChat,
   deleteChat,
+  getAccessibleDatasets,
 } from "@/lib/api";
 
 import type {
@@ -33,8 +34,7 @@ import type {
 } from "@/lib/types";
 import { clearStoredToken, generateUUID, saveBlob } from "@/lib/utils";
 import AppHeader from "./AppHeader";
-
-const HISTORY_CACHE_LIMIT = 10;
+import { CONFIG } from "@/lib/config";
 
 const cloneMessages = (messages: ChatMessageType[]): ChatMessageType[] =>
   messages.map((message) => ({ ...message }));
@@ -43,6 +43,7 @@ const createChatRuntime = (messages: ChatMessageType[] = []): ChatRuntime => ({
   messages: cloneMessages(messages),
   isStreaming: false,
   status: "Ready",
+  dataset: null,
   sidebar: null,
   sidebarStatus: "Idle",
   tableIndex: 0,
@@ -83,26 +84,17 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
     localStorage.setItem("isChatListOpen", JSON.stringify(isChatListOpen));
   }, [isChatListOpen]);
 
-  const userMenuRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        userMenuRef.current &&
-        !userMenuRef.current.contains(e.target as Node)
-      ) {
-        setIsUserMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const [accessibleDatasets, setAccessibleDatasets] = useState<string[]>([]);
+  const [manualDataset, setManualDataset] = useState<string>("");
 
   const emptyRuntime = useMemo(() => createChatRuntime(), []);
-
   const activeChat = activeChatId
     ? (chatStateById[activeChatId] ?? emptyRuntime)
     : emptyRuntime;
+
+  const selectedDataset = activeChatId
+    ? (activeChat.dataset ?? manualDataset)
+    : manualDataset;
 
   const updateChatState = useCallback(
     (chatId: string, updater: (current: ChatRuntime) => ChatRuntime) => {
@@ -142,10 +134,27 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
       }
 
       try {
-        const currentUser = await getCurrentUser();
+        const [currentUser, datasetsRes] = await Promise.all([
+          getCurrentUser(),
+          getAccessibleDatasets(),
+        ]);
         if (!mounted) return;
         setUser(currentUser);
         setAuthChecked(true);
+        setAccessibleDatasets(datasetsRes.datasets);
+
+        if (datasetsRes.datasets.length > 1) {
+          const saved = localStorage.getItem(
+            `selectedDataset:${currentUser.email}`,
+          );
+          setManualDataset(
+            saved && datasetsRes.datasets.includes(saved)
+              ? saved
+              : datasetsRes.datasets[0],
+          );
+        } else if (datasetsRes.datasets.length > 0) {
+          setManualDataset(datasetsRes.datasets[0]);
+        }
       } catch (error) {
         if (!mounted) return;
         if (!handleUnauthorized(error)) {
@@ -193,7 +202,7 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
     }
 
     // Evict LRU entry if at capacity
-    if (loadedHistoryIds.current.size >= HISTORY_CACHE_LIMIT) {
+    if (loadedHistoryIds.current.size >= CONFIG.HISTORY_CACHE_LIMIT) {
       const lruId = loadedHistoryIds.current.values().next().value; // first = oldest
       if (lruId !== undefined) {
         loadedHistoryIds.current.delete(lruId);
@@ -216,7 +225,8 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
       .then((data) => {
         updateChatState(activeChatId, (prev) => ({
           ...prev,
-          messages: cloneMessages(data?.messages ?? []),
+          messages: cloneMessages(data.messages ?? []),
+          dataset: data.dataset_name ?? null,
           isHistoryLoading: false,
         }));
       })
@@ -315,6 +325,7 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
     const chatId = isNew ? generateUUID() : activeChatId;
 
     if (isNew) {
+      loadedHistoryIds.current.add(chatId);
       setActiveChatId(chatId);
       window.history.replaceState(null, "", `/chat/${chatId}`);
     }
@@ -356,6 +367,7 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
       for await (const event of streamChat({
         chat_id: chatId,
         message: content,
+        dataset_name: selectedDataset,
       })) {
         if (event.sender === "log") {
           const cleanLog = event.text.replace(/^LOG\s*:\s*/i, ""); // Strip "LOG:" safely
@@ -555,6 +567,10 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
               user={user}
               isLoggingOut={isLoggingOut}
               handleLogout={handleLogout}
+              selectedDataset={selectedDataset}
+              accessibleDatasets={accessibleDatasets}
+              handleDatasetChange={setManualDataset}
+              isDatasetLocked={!!activeChatId}
             />
 
             <div
