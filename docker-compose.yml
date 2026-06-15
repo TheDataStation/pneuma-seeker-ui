@@ -4,5 +4,6 @@ services:
     image: pneuma_seeker_ui:${NEXT_APP_VERSION:-latest}
     ports:
       - "3000:3000"
+    restart: unless-stopped
     environment:
       - NODE_ENV=production
