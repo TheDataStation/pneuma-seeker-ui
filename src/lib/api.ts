@@ -1,4 +1,5 @@
 // src/lib/api.ts
+import { CONFIG } from "./config";
 import type {
   User,
   Group,
@@ -15,9 +16,6 @@ import type {
   ChatListResponse,
   AccessibleDatasetResponse,
 } from "./types";
-
-const DEFAULT_BASE =
-  process.env.NEXT_PUBLIC_PNEUMA_API_BASE ?? "http://localhost:8000";
 
 class ApiError extends Error {
   status: number;
@@ -52,7 +50,7 @@ async function request<T>(
     headers.Authorization = `Bearer ${authToken}`;
   }
 
-  const response = await fetch(`${DEFAULT_BASE}${path}`, {
+  const response = await fetch(`${CONFIG.BACKEND_BASE_URL}${path}`, {
     ...options,
     headers,
   });
@@ -165,7 +163,7 @@ export async function* streamChat(
     headers.Authorization = `Bearer ${authToken}`;
   }
 
-  const response = await fetch(`${DEFAULT_BASE}/chat/`, {
+  const response = await fetch(`${CONFIG.BACKEND_BASE_URL}/chat/`, {
     method: "POST",
     headers,
     body: JSON.stringify(payload),
@@ -302,7 +300,7 @@ export async function downloadTargetViews(
     headers.Authorization = `Bearer ${authToken}`;
   }
 
-  const response = await fetch(`${DEFAULT_BASE}/chat/target_views/${chat_id}`, {
+  const response = await fetch(`${CONFIG.BACKEND_BASE_URL}/chat/target_views/${chat_id}`, {
     method: "GET",
     headers,
   });
@@ -324,7 +322,7 @@ export async function downloadE2EScript(
     headers.Authorization = `Bearer ${authToken}`;
   }
 
-  const response = await fetch(`${DEFAULT_BASE}/chat/e2e_script/${chat_id}`, {
+  const response = await fetch(`${CONFIG.BACKEND_BASE_URL}/chat/e2e_script/${chat_id}`, {
     method: "GET",
     headers,
   });
