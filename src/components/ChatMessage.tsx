@@ -17,7 +17,7 @@ const WELCOME_MESSAGES = [
 
 const roleStyles: Record<string, string> = {
   user: "bg-ember/10 border-ember/40 text-ink",
-  assistant: "bg-white border-sand-strong text-ink",
+  assistant: "bg-card border-sand-strong text-ink",
   system: "bg-sand-strong/70 border-sand-strong text-slate",
 };
 

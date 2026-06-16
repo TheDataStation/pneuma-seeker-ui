@@ -72,7 +72,7 @@ function MaterializeViewsStep({
           {targetViews.length > 1 && (
             <div className="flex items-center justify-between">
               <button
-                className="cursor-pointer rounded-full border border-sand-strong/70 bg-white px-3 py-1 text-xs font-semibold text-slate disabled:opacity-50"
+                className="cursor-pointer rounded-full border border-sand-strong/70 bg-card px-3 py-1 text-xs font-semibold text-slate disabled:opacity-50"
                 onClick={() => setTargetViewIndex((i) => Math.max(i - 1, 0))}
                 disabled={targetViewIndex === 0}
               >
@@ -82,7 +82,7 @@ function MaterializeViewsStep({
                 {targetViewIndex + 1} / {targetViews.length}
               </span>
               <button
-                className="cursor-pointer rounded-full border border-sand-strong/70 bg-white px-3 py-1 text-xs font-semibold text-slate disabled:opacity-50"
+                className="cursor-pointer rounded-full border border-sand-strong/70 bg-card px-3 py-1 text-xs font-semibold text-slate disabled:opacity-50"
                 onClick={() =>
                   setTargetViewIndex((i) =>
                     Math.min(i + 1, targetViews.length - 1),
@@ -122,7 +122,7 @@ function MaterializeViewsStep({
       {/* Provenance carousel — revealed on demand */}
       {showProvenance && provSteps.length > 0 && (
         <div className="space-y-3 pt-1">
-          <div className="rounded-2xl border border-sand-strong/70 bg-white px-4 py-3 overflow-hidden">
+          <div className="rounded-2xl border border-sand-strong/70 bg-card px-4 py-3 overflow-hidden">
             <div
               className="text-sm leading-relaxed text-ink break-words [&_pre]:mt-3 [&_pre]:rounded-2xl [&_pre]:bg-sand/80 [&_pre]:p-3 [&_pre]:overflow-x-auto [&_code]:text-[0.82rem] [&_code]:break-all"
               dangerouslySetInnerHTML={{
@@ -132,7 +132,7 @@ function MaterializeViewsStep({
           </div>
           <div className="flex items-center justify-between">
             <button
-              className="cursor-pointer rounded-full border border-sand-strong/70 bg-white px-3 py-1 text-xs font-semibold text-slate disabled:opacity-50"
+              className="cursor-pointer rounded-full border border-sand-strong/70 bg-card px-3 py-1 text-xs font-semibold text-slate disabled:opacity-50"
               onClick={() =>
                 updateChatState(activeChatId, (prev) => ({
                   ...prev,
@@ -147,7 +147,7 @@ function MaterializeViewsStep({
               {provIndex + 1} / {provSteps.length}
             </span>
             <button
-              className="cursor-pointer rounded-full border border-sand-strong/70 bg-white px-3 py-1 text-xs font-semibold text-slate disabled:opacity-50"
+              className="cursor-pointer rounded-full border border-sand-strong/70 bg-card px-3 py-1 text-xs font-semibold text-slate disabled:opacity-50"
               onClick={() =>
                 updateChatState(activeChatId, (prev) => ({
                   ...prev,
@@ -161,7 +161,7 @@ function MaterializeViewsStep({
           </div>
           {sidebar?.state?.is_T_materialized && (
             <button
-              className="cursor-pointer w-full rounded-2xl border border-sand-strong/70 bg-white px-4 py-3 text-sm font-semibold text-ink transition hover:border-ember/50"
+              className="cursor-pointer w-full rounded-2xl border border-sand-strong/70 bg-card px-4 py-3 text-sm font-semibold text-ink transition hover:border-ember/50"
               onClick={onProvenanceDownload}
             >
               Download preparation script
@@ -200,12 +200,12 @@ function ExecuteScriptStep({
   return (
     <div className="space-y-3">
       <div className="relative">
-        <pre className="max-h-48 overflow-auto rounded-2xl border border-sand-strong/70 bg-white px-4 py-3 text-xs text-ink">
+        <pre className="max-h-48 overflow-auto rounded-2xl border border-sand-strong/70 bg-card px-4 py-3 text-xs text-ink">
           {script || "No script yet."}
         </pre>
         {script && (
           <button
-            className="cursor-pointer absolute top-2 right-2 rounded-lg border border-sand-strong/70 bg-white px-2 py-1 text-xs font-semibold text-slate/60 transition hover:text-ink hover:border-slate/40"
+            className="cursor-pointer absolute top-2 right-2 rounded-lg border border-sand-strong/70 bg-card px-2 py-1 text-xs font-semibold text-slate/60 transition hover:text-ink hover:border-slate/40"
             onClick={handleCopy}
           >
             {copied ? "Copied!" : "Copy"}
@@ -278,7 +278,7 @@ export function InspectorSidebar({
           />
           <div className="flex items-center justify-between">
             <button
-              className="cursor-pointer rounded-full border border-sand-strong/70 bg-white px-3 py-1 text-xs font-semibold text-slate disabled:opacity-50"
+              className="cursor-pointer rounded-full border border-sand-strong/70 bg-card px-3 py-1 text-xs font-semibold text-slate disabled:opacity-50"
               onClick={() =>
                 updateChatState(activeChatId, (prev) => ({
                   ...prev,
@@ -293,7 +293,7 @@ export function InspectorSidebar({
               {tableIndex + 1} / {retrievedTableNames.length}
             </span>
             <button
-              className="cursor-pointer rounded-full border border-sand-strong/70 bg-white px-3 py-1 text-xs font-semibold text-slate disabled:opacity-50"
+              className="cursor-pointer rounded-full border border-sand-strong/70 bg-card px-3 py-1 text-xs font-semibold text-slate disabled:opacity-50"
               onClick={() =>
                 updateChatState(activeChatId, (prev) => ({
                   ...prev,
@@ -349,7 +349,7 @@ export function InspectorSidebar({
   return (
     <aside className="flex h-full min-h-0 flex-col gap-6 overflow-y-auto pr-2">
       {sidebarStatus === "Refreshing..." && steps.length === 0 && (
-        <div className="flex items-center gap-2 rounded-2xl border border-sand-strong/70 bg-white px-4 py-2.5 text-xs text-slate/60">
+        <div className="flex items-center gap-2 rounded-2xl border border-sand-strong/70 bg-card px-4 py-2.5 text-xs text-slate/60">
           <span className="inline-block h-2 w-2 rounded-full bg-ember animate-pulse" />
           Loading analysis state…
         </div>

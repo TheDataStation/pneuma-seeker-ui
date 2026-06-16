@@ -1,7 +1,8 @@
 // src/components/ChatSidebar.tsx
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+import { useState } from "react";
 import type { ChatSession } from "@/lib/types";
 import { getRelativeTime } from "@/lib/utils";
 
@@ -15,6 +16,7 @@ interface ChatSidebarProps {
   hasMore: boolean;
   onLoadMore: () => void;
   isLoading: boolean;
+  onClose: () => void;
 }
 
 export function ChatSidebar({
@@ -27,6 +29,7 @@ export function ChatSidebar({
   hasMore,
   onLoadMore,
   isLoading,
+  onClose,
 }: ChatSidebarProps) {
   const [searchValue, setSearchValue] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -54,18 +57,55 @@ export function ChatSidebar({
 
   const isSearchActive = searchValue.trim().length > 0;
 
+  const handleSelectChat = (id: string) => {
+    setActiveChatId(id);
+    onClose();
+  };
+
   return (
+    /*
+     * Mobile: fixed full-screen overlay that slides in from the left.
+     * Desktop (sm+): inline panel that expands/collapses by width.
+     */
     <aside
-      className={`relative min-w-0 overflow-hidden transition-all duration-300 ${isOpen ? "w-72 opacity-100" : "w-0 opacity-0"
-        }`}
+      className={[
+        // Mobile: slide in/out from left as a full-screen overlay
+        "fixed inset-y-0 left-0 z-40 w-full transition-transform duration-300 ease-in-out",
+        // Desktop: revert to inline layout with width-based expand/collapse
+        "sm:relative sm:inset-auto sm:z-auto sm:min-w-0 sm:overflow-hidden sm:transition-all sm:duration-300",
+        isOpen
+          ? "translate-x-0 sm:w-72 sm:opacity-100"
+          : "-translate-x-full sm:translate-x-0 sm:w-0 sm:opacity-0",
+      ].join(" ")}
       aria-hidden={!isOpen}
     >
       <div
-        className={`panel flex h-full flex-col rounded-[15px] p-5 ${isOpen ? "" : "pointer-events-none"
-          }`}
+        className={`panel flex h-full flex-col rounded-[15px] p-5 ${!isOpen ? "pointer-events-none" : ""}`}
       >
         <div className="flex items-center justify-between">
           <h2 className="font-display text-lg">Chats</h2>
+          {/* Close button — only meaningful on mobile overlay */}
+          <button
+            type="button"
+            className="sm:hidden cursor-pointer rounded-full border border-sand-strong/70 bg-card p-1.5 text-slate hover:brightness-90 duration-200"
+            onClick={onClose}
+            aria-label="Close sidebar"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
+          </button>
         </div>
 
         {/* Search input */}
@@ -90,7 +130,7 @@ export function ChatSidebar({
             value={searchValue}
             onChange={handleSearchChange}
             placeholder="Search chats…"
-            className="w-full rounded-lg border border-sand-strong/70 bg-white py-1.5 pl-7 pr-7 text-xs text-ink placeholder:text-slate/50 focus:border-ember/40 focus:outline-none focus:ring-1 focus:ring-ember/20"
+            className="w-full rounded-lg border border-sand-strong/70 bg-card py-1.5 pl-7 pr-7 text-xs text-ink placeholder:text-slate/50 focus:border-ember/40 focus:outline-none focus:ring-1 focus:ring-ember/20"
           />
           {isSearchActive && (
             <button
@@ -124,13 +164,13 @@ export function ChatSidebar({
                     tabIndex={0}
                     className={`group cursor-pointer w-full rounded-xl border px-4 py-3 text-left transition select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember/40 ${isActive
                       ? "border-ember/40 bg-ember/10"
-                      : "border-sand-strong/70 bg-white hover:border-ember/30"
+                      : "border-sand-strong/70 bg-card hover:border-ember/30"
                       }`}
-                    onClick={() => setActiveChatId(chat.id)}
+                    onClick={() => handleSelectChat(chat.id)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
-                        setActiveChatId(chat.id);
+                        handleSelectChat(chat.id);
                       }
                     }}
                   >
@@ -146,7 +186,7 @@ export function ChatSidebar({
 
                         <button
                           type="button"
-                          className="cursor-pointer flex items-center justify-center p-1 rounded-md text-red-600 hover:bg-red-50 duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                          className="cursor-pointer flex items-center justify-center p-1 rounded-md text-red-600 hover:bg-red-50 dark:hover:bg-red-950 duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
                           title="Delete chat"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -173,7 +213,7 @@ export function ChatSidebar({
                   type="button"
                   disabled={isLoading}
                   onClick={onLoadMore}
-                  className="w-full rounded-xl border border-sand-strong/70 bg-white px-4 py-2 text-xs text-slate/70 hover:border-ember/30 hover:text-ink transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full rounded-xl border border-sand-strong/70 bg-card px-4 py-2 text-xs text-slate/70 hover:border-ember/30 hover:text-ink transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? "Loading…" : "Load more"}
                 </button>

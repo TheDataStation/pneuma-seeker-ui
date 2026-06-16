@@ -35,6 +35,7 @@ import type {
 import { clearStoredToken, generateUUID, saveBlob } from "@/lib/utils";
 import AppHeader from "./AppHeader";
 import { CONFIG } from "@/lib/config";
+import { useDarkMode } from "@/lib/useDarkMode";
 
 const cloneMessages = (messages: ChatMessageType[]): ChatMessageType[] =>
   messages.map((message) => ({ ...message }));
@@ -56,6 +57,7 @@ const createChatRuntime = (messages: ChatMessageType[] = []): ChatRuntime => ({
 
 export function ChatApp({ initialChatId }: { initialChatId?: string }) {
   const router = useRouter();
+  const { isDark, toggle: toggleDark } = useDarkMode();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
@@ -600,6 +602,15 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
 
   return (
     <div className="flex h-screen flex-1 flex-col overflow-hidden">
+      {/* Mobile backdrop — tapping it closes the sidebar */}
+      {isChatListOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/50 sm:hidden"
+          aria-hidden="true"
+          onClick={() => setIsChatListOpen(false)}
+        />
+      )}
+
       <div className="app-shell flex flex-1 min-h-0 flex-col overflow-hidden border border-white/70 p-3 lg:p-4 fade-in">
         <div
           className={`flex min-h-0 flex-1 ${isChatListOpen ? "gap-6" : "gap-0"}`}
@@ -617,6 +628,12 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
             hasMore={chatHasMore}
             onLoadMore={handleLoadMoreChats}
             isLoading={isChatListLoading}
+            onClose={() => {
+              // On mobile, close the sidebar when a chat is selected
+              if (window.matchMedia("(max-width: 639px)").matches) {
+                setIsChatListOpen(false);
+              }
+            }}
           />
 
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -633,6 +650,8 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
               accessibleDatasets={accessibleDatasets}
               handleDatasetChange={setManualDataset}
               isDatasetLocked={!!activeChatId}
+              isDark={isDark}
+              onToggleDark={toggleDark}
             />
 
             <div

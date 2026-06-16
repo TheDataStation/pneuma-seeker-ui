@@ -16,7 +16,7 @@ export function TablePreview({ title, rows, columnDescriptions }: TablePreviewPr
           {title}
         </div>
       ) : null}
-      <div className="overflow-hidden rounded-2xl border border-sand-strong/70 bg-white/90 shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-sand-strong/70 bg-card/90 shadow-sm">
         <div className="max-h-52 overflow-auto">
           <table className="w-full text-left text-xs">
             <thead className="sticky top-0 bg-sand/80 text-[0.7rem] uppercase tracking-[0.14em] text-slate">

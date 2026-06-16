@@ -1,7 +1,6 @@
 // src/components/AppHeader.tsx
-import { getAccessibleDatasets } from "@/lib/api";
 import { User } from "@/lib/types";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 type AppHeaderProps = {
   isChatListOpen: boolean;
@@ -16,6 +15,8 @@ type AppHeaderProps = {
   accessibleDatasets: string[];
   handleDatasetChange: (dataset: string) => void;
   isDatasetLocked: boolean;
+  isDark: boolean;
+  onToggleDark: () => void;
 };
 
 export default function AppHeader({
@@ -31,6 +32,8 @@ export default function AppHeader({
   accessibleDatasets,
   handleDatasetChange,
   isDatasetLocked,
+  isDark,
+  onToggleDark,
 }: AppHeaderProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -52,7 +55,7 @@ export default function AppHeader({
     <header className="flex flex-wrap items-center justify-between gap-4">
       <div className="flex flex-wrap items-center gap-3">
         <button
-          className="cursor-pointer duration-300 hover:brightness-90 rounded-full border border-sand-strong/70 bg-white p-2 text-slate"
+          className="cursor-pointer duration-300 hover:brightness-90 rounded-full border border-sand-strong/70 bg-card p-2 text-slate"
           onClick={() => setIsChatListOpen(!isChatListOpen)}
           aria-pressed={isChatListOpen}
           aria-label={isChatListOpen ? "Hide chats" : "Show chats"}
@@ -75,7 +78,7 @@ export default function AppHeader({
         </button>
 
         <button
-          className="cursor-pointer duration-300 hover:brightness-90 rounded-full border border-sand-strong/70 bg-white p-2 text-slate"
+          className="cursor-pointer duration-300 hover:brightness-90 rounded-full border border-sand-strong/70 bg-card p-2 text-slate"
           onClick={handleCreateNewChatSlot}
           aria-label="New chat"
           title="New chat"
@@ -110,7 +113,7 @@ export default function AppHeader({
             handleDatasetChange(e.target.value);
           }}
           disabled={isDatasetLocked}
-          className="cursor-pointer rounded-full border border-sand-strong/70 bg-white px-3 py-1.5 text-sm text-slate duration-300 hover:brightness-90 focus:outline-none"
+          className="cursor-pointer rounded-full border border-sand-strong/70 bg-card px-3 py-1.5 text-sm text-slate duration-300 hover:brightness-90 focus:outline-none"
         >
           {accessibleDatasets.map((ds) => (
             <option key={ds} value={ds}>
@@ -119,52 +122,98 @@ export default function AppHeader({
           ))}
         </select>
       </div>
-      <div className="relative" ref={menuRef}>
+
+      <div className="flex items-center gap-2">
+        {/* Dark mode toggle */}
         <button
           type="button"
-          className="cursor-pointer duration-300 hover:bg-[#6b0000] rounded-full border border-[#6b0000] bg-[#800000] p-2 text-white"
-          onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-          aria-label="User menu"
-          title="User menu"
-          aria-expanded={isUserMenuOpen}
+          className="cursor-pointer duration-300 hover:brightness-90 rounded-full border border-sand-strong/70 bg-card p-2 text-slate"
+          onClick={onToggleDark}
+          aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+          title={isDark ? "Switch to light mode" : "Switch to dark mode"}
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="12" cy="8" r="4" />
-            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
-          </svg>
+          {isDark ? (
+            /* Sun icon for dark mode (click to go light) */
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+            </svg>
+          ) : (
+            /* Moon icon for light mode (click to go dark) */
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+          )}
         </button>
 
-        {isUserMenuOpen && (
-          <div className="absolute right-0 mt-2 w-48 rounded-xl border border-sand-strong/70 bg-white shadow-lg z-50 overflow-hidden">
-            <div className="px-4 py-3 text-xs text-slate border-b border-sand-strong/30 truncate">
-              Email: {user.email}
-            </div>
-            <div className="px-4 py-3 text-xs text-slate border-b border-sand-strong/30 truncate">
-              Group: {user.group_name}
-            </div>
-            <button
-              type="button"
-              className="w-full text-left cursor-pointer duration-300 hover:bg-red-50 px-4 py-3 text-xs font-semibold uppercase tracking-[0.22em] text-[#800000] disabled:opacity-60"
-              onClick={() => {
-                handleLogout();
-                setIsUserMenuOpen(false);
-              }}
-              disabled={isLoggingOut}
+        {/* User menu */}
+        <div className="relative" ref={menuRef}>
+          <button
+            type="button"
+            className="cursor-pointer duration-300 hover:bg-[#6b0000] rounded-full border border-[#6b0000] bg-[#800000] p-2 text-white"
+            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+            aria-label="User menu"
+            title="User menu"
+            aria-expanded={isUserMenuOpen}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
-              {isLoggingOut ? "Signing out..." : "Log out"}
-            </button>
-          </div>
-        )}
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+            </svg>
+          </button>
+
+          {isUserMenuOpen && (
+            <div className="absolute right-0 mt-2 w-48 rounded-xl border border-sand-strong/70 bg-card shadow-lg z-50 overflow-hidden">
+              <div className="px-4 py-3 text-xs text-slate border-b border-sand-strong/30 truncate">
+                Email: {user.email}
+              </div>
+              <div className="px-4 py-3 text-xs text-slate border-b border-sand-strong/30 truncate">
+                Group: {user.group_name}
+              </div>
+              <button
+                type="button"
+                className="w-full text-left cursor-pointer duration-300 hover:bg-red-50 dark:hover:bg-red-950 px-4 py-3 text-xs font-semibold uppercase tracking-[0.22em] text-[#800000] disabled:opacity-60"
+                onClick={() => {
+                  handleLogout();
+                  setIsUserMenuOpen(false);
+                }}
+                disabled={isLoggingOut}
+              >
+                {isLoggingOut ? "Signing out..." : "Log out"}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );
