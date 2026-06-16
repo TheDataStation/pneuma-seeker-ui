@@ -3,6 +3,7 @@
 import { ChatMessageList } from "@/components/ChatMessage";
 import { ChatComposer } from "@/components/ChatComposer";
 import type { ChatMessage as ChatMessageType } from "@/lib/types";
+import { useEffect, useRef } from "react";
 
 interface MainChatAreaProps {
   messages: ChatMessageType[];
@@ -28,9 +29,46 @@ function HistoryLoadingSkeleton() {
 }
 
 export function MainChatArea({ messages, isStreaming, isHistoryLoading, onSend, chatKey }: MainChatAreaProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const isAtBottomRef = useRef(true);
+
+  const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
+    const el = scrollRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior });
+  };
+
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    isAtBottomRef.current = el.scrollTop + el.clientHeight >= el.scrollHeight - 80;
+  };
+
+  // Auto-scroll on new/updated messages while user is near bottom
+  useEffect(() => {
+    if (isAtBottomRef.current) scrollToBottom();
+  }, [messages]);
+
+  // After thoughts collapse animation finishes (~500ms), scroll to reveal the short final answer
+  useEffect(() => {
+    if (!isStreaming) {
+      const timer = setTimeout(() => scrollToBottom(), 550);
+      return () => clearTimeout(timer);
+    }
+  }, [isStreaming]);
+
+  // Reset "at bottom" tracking when switching chats
+  useEffect(() => {
+    isAtBottomRef.current = true;
+  }, [chatKey]);
+
   return (
     <main className="flex h-full min-h-0 flex-col gap-6">
-      <div key={chatKey} className="mt-6 flex min-h-0 flex-1 flex-col overflow-y-auto pr-2 fade-in">
+      <div
+        key={chatKey}
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="mt-6 flex min-h-0 flex-1 flex-col overflow-y-auto pr-2 fade-in"
+      >
         {isHistoryLoading ? <HistoryLoadingSkeleton /> : <ChatMessageList messages={messages} />}
       </div>
       <ChatComposer isSending={isStreaming} onSend={onSend} />
