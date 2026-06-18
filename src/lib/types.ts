@@ -40,6 +40,7 @@ export interface User {
   username: string;
   group_id: string | null;
   group_name: string | null;
+  is_active: boolean;
 }
 
 export interface TokenResponse {
@@ -68,6 +69,38 @@ export interface LoginRequest {
 export interface GroupCreateRequest {
   name: string;
   parent_group_id?: string | null;
+}
+
+export interface UpdateUserRequest {
+  username?: string;
+  is_active?: boolean;
+  group_id?: string | null;
+}
+
+export interface UpdateMeRequest {
+  username?: string;
+}
+
+export interface ChangePasswordRequest {
+  current_password: string;
+  new_password: string;
+}
+
+export interface UpdateGroupRequest {
+  name?: string;
+  parent_group_id?: string | null;
+}
+
+export interface SetPermissionRequest {
+  permission_key: string;
+  permission_value: string;
+  group_id?: string | null;
+  group_name?: string | null;
+}
+
+export interface UpdateUserGroupRequest {
+  user_id: string;
+  group_id: string;
 }
 
 export interface TableRow {

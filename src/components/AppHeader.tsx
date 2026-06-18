@@ -1,5 +1,6 @@
 // src/components/AppHeader.tsx
 import { User } from "@/lib/types";
+import Link from "next/link";
 import { useEffect, useRef } from "react";
 
 type AppHeaderProps = {
@@ -200,6 +201,15 @@ export default function AppHeader({
               <div className="px-4 py-3 text-xs text-slate border-b border-sand-strong/30 truncate">
                 Group: {user.group_name}
               </div>
+              {user.group_name === "admin" && (
+                <Link
+                  href="/admin"
+                  className="block w-full text-left px-4 py-3 text-xs font-semibold uppercase tracking-[0.22em] text-slate hover:bg-sand/60 dark:hover:bg-white/5 transition-colors"
+                  onClick={() => setIsUserMenuOpen(false)}
+                >
+                  Admin panel
+                </Link>
+              )}
               <button
                 type="button"
                 className="w-full text-left cursor-pointer duration-300 hover:bg-red-50 dark:hover:bg-red-950 px-4 py-3 text-xs font-semibold uppercase tracking-[0.22em] text-[#800000] disabled:opacity-60"

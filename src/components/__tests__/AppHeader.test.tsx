@@ -3,7 +3,14 @@ import userEvent from "@testing-library/user-event";
 import AppHeader from "@/components/AppHeader";
 import type { User } from "@/lib/types";
 
-const mockUser: User = { email: "test@example.com", group_name: "test-group" };
+const mockUser: User = {
+  user_id: "user-1",
+  email: "test@example.com",
+  username: "test@example.com",
+  group_id: "group-1",
+  group_name: "test-group",
+  is_active: true,
+};
 
 const defaultProps = {
   isChatListOpen: false,
