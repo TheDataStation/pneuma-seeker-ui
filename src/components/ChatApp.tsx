@@ -93,6 +93,11 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
   const [accessibleDatasets, setAccessibleDatasets] = useState<string[]>([]);
   const [manualDataset, setManualDataset] = useState<string>("");
 
+  useEffect(() => {
+    if (!user || !manualDataset) return;
+    localStorage.setItem(`selectedDataset:${user.user_id}`, manualDataset);
+  }, [manualDataset, user]);
+
   const emptyRuntime = useMemo(() => createChatRuntime(), []);
   const activeChat = activeChatId
     ? (chatStateById[activeChatId] ?? emptyRuntime)
@@ -151,7 +156,7 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
 
         if (datasetsRes.datasets.length > 1) {
           const saved = localStorage.getItem(
-            `selectedDataset:${currentUser.email}`,
+            `selectedDataset:${currentUser.user_id}`,
           );
           setManualDataset(
             saved && datasetsRes.datasets.includes(saved)
