@@ -12,6 +12,8 @@ const mockUser: User = {
   is_active: true,
 };
 
+const adminUser: User = { ...mockUser, group_name: "admin" };
+
 const defaultProps = {
   isChatListOpen: false,
   setIsChatListOpen: jest.fn(),
@@ -28,6 +30,8 @@ const defaultProps = {
   isDark: false,
   onToggleDark: jest.fn(),
 };
+
+beforeEach(() => jest.clearAllMocks());
 
 // ---------------------------------------------------------------------------
 // Dark mode toggle
@@ -59,9 +63,9 @@ describe("AppHeader – dark mode toggle", () => {
     const onToggleDark = jest.fn();
     const user = userEvent.setup();
     render(<AppHeader {...defaultProps} onToggleDark={onToggleDark} />);
-
-    await user.click(screen.getByRole("button", { name: /switch to dark mode/i }));
-
+    await user.click(
+      screen.getByRole("button", { name: /switch to dark mode/i }),
+    );
     expect(onToggleDark).toHaveBeenCalledTimes(1);
   });
 
@@ -69,9 +73,7 @@ describe("AppHeader – dark mode toggle", () => {
     const onToggleDark = jest.fn();
     const user = userEvent.setup();
     render(<AppHeader {...defaultProps} onToggleDark={onToggleDark} />);
-
     await user.click(screen.getByRole("button", { name: /new chat/i }));
-
     expect(onToggleDark).not.toHaveBeenCalled();
   });
 });
@@ -109,9 +111,7 @@ describe("AppHeader – core rendering", () => {
         handleDatasetChange={handleDatasetChange}
       />,
     );
-
     await user.selectOptions(screen.getByRole("combobox"), "ds2");
-
     expect(handleDatasetChange).toHaveBeenCalledWith("ds2");
   });
 
@@ -122,7 +122,108 @@ describe("AppHeader – core rendering", () => {
   });
 
   it("shows 'Signing out...' text when isLoggingOut=true", () => {
-    render(<AppHeader {...defaultProps} isUserMenuOpen={true} isLoggingOut={true} />);
+    render(
+      <AppHeader {...defaultProps} isUserMenuOpen={true} isLoggingOut={true} />,
+    );
     expect(screen.getByText("Signing out...")).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Dataset selector locking
+// ---------------------------------------------------------------------------
+
+describe("AppHeader – dataset selector", () => {
+  it("is enabled when isDatasetLocked=false", () => {
+    render(<AppHeader {...defaultProps} isDatasetLocked={false} />);
+    expect(screen.getByRole("combobox")).not.toBeDisabled();
+  });
+
+  it("is disabled when isDatasetLocked=true", () => {
+    render(<AppHeader {...defaultProps} isDatasetLocked={true} />);
+    expect(screen.getByRole("combobox")).toBeDisabled();
+  });
+
+  it("renders no options when accessibleDatasets is empty", () => {
+    render(
+      <AppHeader
+        {...defaultProps}
+        accessibleDatasets={[]}
+        selectedDataset=""
+      />,
+    );
+    const combobox = screen.getByRole("combobox");
+    expect(combobox.querySelectorAll("option").length).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// New chat button
+// ---------------------------------------------------------------------------
+
+describe("AppHeader – new chat button", () => {
+  it("calls handleCreateNewChatSlot when New chat is clicked", async () => {
+    const handleCreateNewChatSlot = jest.fn();
+    const user = userEvent.setup();
+    render(
+      <AppHeader
+        {...defaultProps}
+        handleCreateNewChatSlot={handleCreateNewChatSlot}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: /new chat/i }));
+    expect(handleCreateNewChatSlot).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// User menu toggle
+// ---------------------------------------------------------------------------
+
+describe("AppHeader – user menu toggle", () => {
+  it("calls setIsUserMenuOpen(true) when menu button is clicked while closed", async () => {
+    const setIsUserMenuOpen = jest.fn();
+    const user = userEvent.setup();
+    render(
+      <AppHeader
+        {...defaultProps}
+        isUserMenuOpen={false}
+        setIsUserMenuOpen={setIsUserMenuOpen}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: /user menu/i }));
+    expect(setIsUserMenuOpen).toHaveBeenCalledWith(true);
+  });
+
+  it("calls setIsUserMenuOpen(false) when menu button is clicked while open", async () => {
+    const setIsUserMenuOpen = jest.fn();
+    const user = userEvent.setup();
+    render(
+      <AppHeader
+        {...defaultProps}
+        isUserMenuOpen={true}
+        setIsUserMenuOpen={setIsUserMenuOpen}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: /user menu/i }));
+    expect(setIsUserMenuOpen).toHaveBeenCalledWith(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Admin panel link
+// ---------------------------------------------------------------------------
+
+describe("AppHeader – admin panel link", () => {
+  it("shows Admin panel link when user group is admin", () => {
+    render(
+      <AppHeader {...defaultProps} user={adminUser} isUserMenuOpen={true} />,
+    );
+    expect(screen.getByText(/admin panel/i)).toBeInTheDocument();
+  });
+
+  it("does not show Admin panel link for non-admin users", () => {
+    render(<AppHeader {...defaultProps} isUserMenuOpen={true} />);
+    expect(screen.queryByText(/admin panel/i)).not.toBeInTheDocument();
   });
 });
