@@ -2,6 +2,8 @@ import {
   login,
   logout,
   getCurrentUser,
+  updateMe,
+  changePassword,
   listUsers,
   listGroups,
   createGroup,
@@ -215,6 +217,71 @@ describe("deleteGroupPermission", () => {
       "/auth/groups/g1/permissions/dataset%3Aaccess%3Adb1",
       { method: "DELETE" },
       undefined,
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// updateMe
+// ---------------------------------------------------------------------------
+
+describe("updateMe", () => {
+  it("calls PATCH /auth/me with the update payload", async () => {
+    mockRequest.mockResolvedValue({} as any);
+    await updateMe({ username: "newname" });
+    expect(mockRequest).toHaveBeenCalledWith(
+      "/auth/me",
+      { method: "PATCH", body: JSON.stringify({ username: "newname" }) },
+      undefined,
+    );
+  });
+
+  it("returns the updated user", async () => {
+    const updatedUser = { user_id: "u1", username: "newname", email: "a@b.com", group_id: null, group_name: null, is_active: true };
+    mockRequest.mockResolvedValue(updatedUser as any);
+    const result = await updateMe({ username: "newname" });
+    expect(result).toEqual(updatedUser);
+  });
+
+  it("forwards an explicit token", async () => {
+    mockRequest.mockResolvedValue({} as any);
+    await updateMe({ username: "x" }, "tok123");
+    expect(mockRequest).toHaveBeenCalledWith(
+      "/auth/me",
+      expect.any(Object),
+      "tok123",
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// changePassword
+// ---------------------------------------------------------------------------
+
+describe("changePassword", () => {
+  it("calls POST /auth/me/change-password with the password payload", async () => {
+    mockRequest.mockResolvedValue({ status: "ok" } as any);
+    await changePassword({ current_password: "old", new_password: "new" });
+    expect(mockRequest).toHaveBeenCalledWith(
+      "/auth/me/change-password",
+      { method: "POST", body: JSON.stringify({ current_password: "old", new_password: "new" }) },
+      undefined,
+    );
+  });
+
+  it("returns the status response", async () => {
+    mockRequest.mockResolvedValue({ status: "ok" } as any);
+    const result = await changePassword({ current_password: "old", new_password: "new" });
+    expect(result).toEqual({ status: "ok" });
+  });
+
+  it("forwards an explicit token", async () => {
+    mockRequest.mockResolvedValue({ status: "ok" } as any);
+    await changePassword({ current_password: "old", new_password: "new" }, "tok456");
+    expect(mockRequest).toHaveBeenCalledWith(
+      "/auth/me/change-password",
+      expect.any(Object),
+      "tok456",
     );
   });
 });

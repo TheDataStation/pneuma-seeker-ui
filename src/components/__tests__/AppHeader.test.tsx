@@ -227,3 +227,38 @@ describe("AppHeader – admin panel link", () => {
     expect(screen.queryByText(/admin panel/i)).not.toBeInTheDocument();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Profile settings link
+// ---------------------------------------------------------------------------
+
+describe("AppHeader – profile settings link", () => {
+  it("shows Profile settings link in the user menu for all users", () => {
+    render(<AppHeader {...defaultProps} isUserMenuOpen={true} />);
+    expect(screen.getByText(/profile settings/i)).toBeInTheDocument();
+  });
+
+  it("shows Profile settings link for admin users too", () => {
+    render(<AppHeader {...defaultProps} user={adminUser} isUserMenuOpen={true} />);
+    expect(screen.getByText(/profile settings/i)).toBeInTheDocument();
+  });
+
+  it("Profile settings link points to /profile", () => {
+    render(<AppHeader {...defaultProps} isUserMenuOpen={true} />);
+    expect(screen.getByText(/profile settings/i).closest("a")).toHaveAttribute("href", "/profile");
+  });
+
+  it("closes the user menu when Profile settings is clicked", async () => {
+    const setIsUserMenuOpen = jest.fn();
+    const user = userEvent.setup();
+    render(
+      <AppHeader
+        {...defaultProps}
+        isUserMenuOpen={true}
+        setIsUserMenuOpen={setIsUserMenuOpen}
+      />,
+    );
+    await user.click(screen.getByText(/profile settings/i));
+    expect(setIsUserMenuOpen).toHaveBeenCalledWith(false);
+  });
+});
