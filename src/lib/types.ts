@@ -110,6 +110,7 @@ export interface TableRow {
 export interface ConductorState {
   T?: Record<string, TableRow[]>;
   S?: string | null;
+  s_description?: string;
   is_T_materialized?: boolean;
   is_S_executed?: boolean;
   column_descriptions?: Record<string, Record<string, string>>;

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { marked } from "marked";
 import { TablePreview } from "@/components/TablePreview";
 import { TableExplorerModal } from "@/components/TableExplorerModal";
+import { explainScript } from "@/lib/api/chat";
 import type { ChatStateResponse, TableRow } from "@/lib/types";
 
 interface InspectorSidebarProps {
@@ -183,6 +184,7 @@ interface ExecuteScriptStepProps {
   sidebar: ChatStateResponse | null;
   executionResult: TableRow[];
   onExecute: () => Promise<void>;
+  onExplain: () => Promise<string>;
   onExpand: () => void;
 }
 
@@ -190,9 +192,15 @@ function ExecuteScriptStep({
   sidebar,
   executionResult,
   onExecute,
+  onExplain,
   onExpand,
 }: ExecuteScriptStepProps) {
   const [copied, setCopied] = useState(false);
+  const [explaining, setExplaining] = useState(false);
+  const [explanation, setExplanation] = useState<string | null>(
+    sidebar?.state?.s_description || null,
+  );
+
   const script = sidebar?.state?.S?.trim() || "";
 
   const handleCopy = () => {
@@ -201,6 +209,18 @@ function ExecuteScriptStep({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
+  };
+
+  const handleExplain = async () => {
+    setExplaining(true);
+    try {
+      const desc = await onExplain();
+      setExplanation(desc);
+    } catch {
+      // silently fail — user can retry
+    } finally {
+      setExplaining(false);
+    }
   };
 
   return (
@@ -218,13 +238,30 @@ function ExecuteScriptStep({
           </button>
         )}
       </div>
-      <button
-        className="cursor-pointer w-full rounded-2xl bg-sea px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
-        onClick={onExecute}
-        disabled={!script}
-      >
-        Execute script
-      </button>
+      <div className="flex gap-2">
+        <button
+          className="cursor-pointer flex-1 rounded-2xl bg-sea px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
+          onClick={onExecute}
+          disabled={!script}
+        >
+          Execute script
+        </button>
+        <button
+          className="cursor-pointer rounded-2xl border border-sand-strong/70 bg-card px-4 py-3 text-sm font-semibold text-slate hover:text-ink transition disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={handleExplain}
+          disabled={!script || explaining}
+        >
+          {explaining ? "Explaining..." : "Explain Script"}
+        </button>
+      </div>
+      {explanation && (
+        <div className="rounded-2xl border border-sand-strong/70 bg-sand/30 px-4 py-3">
+          <p className="text-xs font-semibold text-slate/60 uppercase tracking-wide mb-1">
+            What this script does
+          </p>
+          <p className="text-sm text-ink leading-relaxed">{explanation}</p>
+        </div>
+      )}
       {executionResult.length > 0 && (
         <TablePreview
           title="Execution result"
@@ -363,6 +400,10 @@ export function InspectorSidebar({
           sidebar={sidebar}
           executionResult={executionResult}
           onExecute={onExecute}
+          onExplain={async () => {
+            const result = await explainScript(activeChatId);
+            return result.description;
+          }}
           onExpand={() =>
             setExplorerTable({
               tableId: "conductor_s_execution",

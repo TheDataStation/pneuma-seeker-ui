@@ -160,6 +160,17 @@ export async function queryTable(
   return request<TableQueryResponse>(`/chat/table_query/${chat_id}?${query}`, { method: "GET" }, token);
 }
 
+export async function explainScript(
+  chat_id: string,
+  token?: string,
+): Promise<{ description: string }> {
+  return request<{ description: string }>(
+    `/chat/explain_script/${chat_id}`,
+    { method: "GET" },
+    token,
+  );
+}
+
 export async function downloadTableCSV(
   chat_id: string,
   table_id: string,

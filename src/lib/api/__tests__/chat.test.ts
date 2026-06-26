@@ -1,4 +1,4 @@
-import { streamChat, getAllChats, deleteChat, getAccessibleDatasets, downloadTargetViews, downloadE2EScript, queryTable, downloadTableCSV } from "@/lib/api/chat";
+import { streamChat, getAllChats, deleteChat, getAccessibleDatasets, downloadTargetViews, downloadE2EScript, queryTable, downloadTableCSV, explainScript } from "@/lib/api/chat";
 import { TextDecoder as NodeTextDecoder } from "util";
 
 // jsdom may not provide TextDecoder in all versions; polyfill from Node's util module
@@ -351,5 +351,37 @@ describe("downloadTableCSV", () => {
       .fn()
       .mockResolvedValue({ ok: false, status: 404, blob: jest.fn() });
     await expect(downloadTableCSV("chat1", "t", {})).rejects.toMatchObject({ status: 404 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// explainScript
+// ---------------------------------------------------------------------------
+
+describe("explainScript", () => {
+  beforeEach(() => {
+    mockJsonFetch(200, { description: "This script joins two tables." });
+  });
+
+  it("calls GET /chat/explain_script/:chatId", async () => {
+    await explainScript("chat1");
+    const [url, options] = (global.fetch as jest.Mock).mock.calls[0];
+    expect(url).toContain("/chat/explain_script/chat1");
+    expect(options.method).toBe("GET");
+  });
+
+  it("returns the description from the response", async () => {
+    const result = await explainScript("chat1");
+    expect(result.description).toBe("This script joins two tables.");
+  });
+
+  it("throws ApiError when the script is missing (400)", async () => {
+    mockJsonFetch(400, { detail: "No script to explain." }, false);
+    await expect(explainScript("chat1")).rejects.toMatchObject({ status: 400 });
+  });
+
+  it("throws ApiError on session not found (404)", async () => {
+    mockJsonFetch(404, { detail: "Not found." }, false);
+    await expect(explainScript("chat1")).rejects.toMatchObject({ status: 404 });
   });
 });

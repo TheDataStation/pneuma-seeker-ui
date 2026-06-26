@@ -6,6 +6,10 @@ jest.mock("marked", () => ({
   marked: { parse: (text: string) => `<p>${text}</p>` },
 }));
 
+jest.mock("../../lib/api/chat", () => ({
+  explainScript: jest.fn(),
+}));
+
 // Stub TableExplorerModal so InspectorSidebar tests don't need to deal with
 // its internal queryTable fetch. Tests for modal behaviour live in
 // TableExplorerModal.test.tsx.
@@ -28,7 +32,10 @@ import {
   InspectorSidebar,
   hasSidebarContent,
 } from "@/components/InspectorSidebar";
+import { explainScript } from "../../lib/api/chat";
 import type { ChatStateResponse, TableRow } from "@/lib/types";
+
+const mockExplainScript = explainScript as jest.Mock;
 
 // ---------------------------------------------------------------------------
 // hasSidebarContent (pure function)
@@ -115,7 +122,10 @@ const defaultProps = {
   onProvenanceDownload: jest.fn(),
 };
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockExplainScript.mockResolvedValue({ description: "This script computes results." });
+});
 
 describe("InspectorSidebar – step rendering", () => {
   it("renders the Analysis Pipeline heading", () => {
@@ -304,5 +314,82 @@ describe("InspectorSidebar – copy script", () => {
       .mockResolvedValue(undefined);
     await user.click(screen.getByRole("button", { name: /copy/i }));
     expect(writeText).toHaveBeenCalledWith("print('hello')");
+  });
+});
+
+describe("InspectorSidebar – explain script", () => {
+  it("shows Explain Script button when script is present", async () => {
+    const user = userEvent.setup();
+    render(<InspectorSidebar {...defaultProps} />);
+    await user.click(screen.getByText("Execute Script"));
+    expect(screen.getByRole("button", { name: /explain script/i })).toBeInTheDocument();
+  });
+
+  it("Explain Script button is disabled when script is blank whitespace", async () => {
+    const user = userEvent.setup();
+    render(
+      <InspectorSidebar
+        {...defaultProps}
+        sidebar={{ ...mockSidebar, state: { ...mockSidebar.state, S: "   " } }}
+      />,
+    );
+    await user.click(screen.getByText("Execute Script"));
+    expect(screen.getByRole("button", { name: /explain script/i })).toBeDisabled();
+  });
+
+  it("clicking Explain Script calls explainScript with the chatId", async () => {
+    const user = userEvent.setup();
+    render(<InspectorSidebar {...defaultProps} />);
+    await user.click(screen.getByText("Execute Script"));
+    await user.click(screen.getByRole("button", { name: /explain script/i }));
+    await screen.findByText("This script computes results.");
+    expect(mockExplainScript).toHaveBeenCalledWith("chat-1");
+  });
+
+  it("shows the explanation text after a successful call", async () => {
+    const user = userEvent.setup();
+    render(<InspectorSidebar {...defaultProps} />);
+    await user.click(screen.getByText("Execute Script"));
+    await user.click(screen.getByRole("button", { name: /explain script/i }));
+    expect(await screen.findByText("This script computes results.")).toBeInTheDocument();
+  });
+
+  it("shows 'Explaining...' while the call is in flight", async () => {
+    let resolve!: (v: { description: string }) => void;
+    mockExplainScript.mockReturnValue(
+      new Promise((res) => { resolve = res; }),
+    );
+    const user = userEvent.setup();
+    render(<InspectorSidebar {...defaultProps} />);
+    await user.click(screen.getByText("Execute Script"));
+    await user.click(screen.getByRole("button", { name: /explain script/i }));
+    expect(screen.getByRole("button", { name: /explaining\.\.\./i })).toBeDisabled();
+    resolve({ description: "done" });
+    await screen.findByText("done");
+  });
+
+  it("shows a cached description from sidebar state without clicking Explain", async () => {
+    const user = userEvent.setup();
+    render(
+      <InspectorSidebar
+        {...defaultProps}
+        sidebar={{
+          ...mockSidebar,
+          state: { ...mockSidebar.state, s_description: "Pre-loaded explanation." },
+        }}
+      />,
+    );
+    await user.click(screen.getByText("Execute Script"));
+    expect(screen.getByText("Pre-loaded explanation.")).toBeInTheDocument();
+    expect(mockExplainScript).not.toHaveBeenCalled();
+  });
+
+  it("button reverts to 'Explain Script' after call completes", async () => {
+    const user = userEvent.setup();
+    render(<InspectorSidebar {...defaultProps} />);
+    await user.click(screen.getByText("Execute Script"));
+    await user.click(screen.getByRole("button", { name: /explain script/i }));
+    await screen.findByText("This script computes results.");
+    expect(screen.getByRole("button", { name: /explain script/i })).toBeEnabled();
   });
 });
