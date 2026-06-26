@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { TablePreview } from "@/components/TablePreview";
 import type { TableRow } from "@/lib/types";
 
@@ -79,5 +80,45 @@ describe("TablePreview – column descriptions", () => {
     render(<TablePreview rows={rows} columnDescriptions={{ name: "desc" }} />);
     const idHeader = screen.getByText("id").closest("th");
     expect(idHeader).toHaveAttribute("title", "");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Expand button
+// ---------------------------------------------------------------------------
+
+describe("TablePreview – expand button", () => {
+  it("does not render Expand button when onExpand is not provided", () => {
+    render(<TablePreview rows={rows} />);
+    expect(screen.queryByRole("button", { name: /expand/i })).not.toBeInTheDocument();
+  });
+
+  it("renders Expand button when onExpand is provided", () => {
+    render(<TablePreview rows={rows} onExpand={jest.fn()} />);
+    expect(screen.getByRole("button", { name: /expand/i })).toBeInTheDocument();
+  });
+
+  it("calls onExpand when the Expand button is clicked", async () => {
+    const user = userEvent.setup();
+    const onExpand = jest.fn();
+    render(<TablePreview rows={rows} onExpand={onExpand} />);
+    await user.click(screen.getByRole("button", { name: /expand/i }));
+    expect(onExpand).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders Expand button alongside the title", () => {
+    render(<TablePreview rows={rows} title="My Table" onExpand={jest.fn()} />);
+    expect(screen.getByText("My Table")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /expand/i })).toBeInTheDocument();
+  });
+
+  it("renders Expand button with no title when title is omitted", () => {
+    render(<TablePreview rows={rows} onExpand={jest.fn()} />);
+    expect(screen.getByRole("button", { name: /expand/i })).toBeInTheDocument();
+  });
+
+  it("does not render a title element when onExpand is provided but title is omitted", () => {
+    const { container } = render(<TablePreview rows={rows} onExpand={jest.fn()} />);
+    expect(container.querySelector("div.truncate")).not.toBeInTheDocument();
   });
 });

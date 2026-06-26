@@ -1,4 +1,4 @@
-import { streamChat, getAllChats, deleteChat, getAccessibleDatasets, downloadTargetViews, downloadE2EScript } from "@/lib/api/chat";
+import { streamChat, getAllChats, deleteChat, getAccessibleDatasets, downloadTargetViews, downloadE2EScript, queryTable, downloadTableCSV } from "@/lib/api/chat";
 import { TextDecoder as NodeTextDecoder } from "util";
 
 // jsdom may not provide TextDecoder in all versions; polyfill from Node's util module
@@ -217,5 +217,139 @@ describe("downloadE2EScript", () => {
   it("throws ApiError on non-OK response", async () => {
     global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 500, blob: jest.fn() });
     await expect(downloadE2EScript("c1")).rejects.toMatchObject({ status: 500 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// queryTable
+// ---------------------------------------------------------------------------
+
+describe("queryTable", () => {
+  const successPayload = {
+    rows: [{ id: 1, name: "Alice" }],
+    total_count: 42,
+    columns: ["id", "name"],
+  };
+
+  beforeEach(() => {
+    mockJsonFetch(200, successPayload);
+  });
+
+  it("calls GET /chat/table_query/:chatId with table_id param", async () => {
+    await queryTable("chat1", "my_table", {});
+    const [url] = (global.fetch as jest.Mock).mock.calls[0];
+    expect(url).toContain("/chat/table_query/chat1");
+    expect(url).toContain("table_id=my_table");
+  });
+
+  it("returns rows, total_count, and columns from the response", async () => {
+    const result = await queryTable("chat1", "t", {});
+    expect(result.total_count).toBe(42);
+    expect(result.columns).toEqual(["id", "name"]);
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0]).toEqual({ id: 1, name: "Alice" });
+  });
+
+  it("includes limit and offset when provided", async () => {
+    await queryTable("chat1", "t", { limit: 25, offset: 50 });
+    const [url] = (global.fetch as jest.Mock).mock.calls[0];
+    expect(url).toContain("limit=25");
+    expect(url).toContain("offset=50");
+  });
+
+  it("includes order_by and order_dir when provided", async () => {
+    await queryTable("chat1", "t", { order_by: "name", order_dir: "desc" });
+    const [url] = (global.fetch as jest.Mock).mock.calls[0];
+    expect(url).toContain("order_by=name");
+    expect(url).toContain("order_dir=desc");
+  });
+
+  it("includes search param when provided", async () => {
+    await queryTable("chat1", "t", { search: "alice" });
+    const [url] = (global.fetch as jest.Mock).mock.calls[0];
+    expect(url).toContain("search=alice");
+  });
+
+  it("includes dataset_name param when provided", async () => {
+    await queryTable("chat1", "t", { dataset_name: "my_ds" });
+    const [url] = (global.fetch as jest.Mock).mock.calls[0];
+    expect(url).toContain("dataset_name=my_ds");
+  });
+
+  it("omits optional params when not provided", async () => {
+    await queryTable("chat1", "t", {});
+    const [url] = (global.fetch as jest.Mock).mock.calls[0];
+    expect(url).not.toContain("search=");
+    expect(url).not.toContain("dataset_name=");
+    expect(url).not.toContain("order_by=");
+  });
+
+  it("uses GET method", async () => {
+    await queryTable("chat1", "t", {});
+    const [, options] = (global.fetch as jest.Mock).mock.calls[0];
+    expect(options.method).toBe("GET");
+  });
+
+  it("throws ApiError on non-OK response", async () => {
+    mockJsonFetch(404, { detail: "Not found" }, false);
+    await expect(queryTable("chat1", "t", {})).rejects.toMatchObject({ status: 404 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// downloadTableCSV
+// ---------------------------------------------------------------------------
+
+describe("downloadTableCSV", () => {
+  const mockCsvBlob = new Blob(["id,name\n1,Alice\n"], { type: "text/csv" });
+
+  beforeEach(() => {
+    global.fetch = jest
+      .fn()
+      .mockResolvedValue({ ok: true, status: 200, blob: jest.fn().mockResolvedValue(mockCsvBlob) });
+  });
+
+  it("calls the correct endpoint with table_id param", async () => {
+    await downloadTableCSV("chat1", "my_table", {});
+    const [url] = (global.fetch as jest.Mock).mock.calls[0];
+    expect(url).toContain("/chat/table_download/chat1");
+    expect(url).toContain("table_id=my_table");
+  });
+
+  it("returns a Blob on success", async () => {
+    const result = await downloadTableCSV("chat1", "t", {});
+    expect(result).toBe(mockCsvBlob);
+  });
+
+  it("includes dataset_name in the URL when provided", async () => {
+    await downloadTableCSV("chat1", "t", { dataset_name: "my_ds" });
+    const [url] = (global.fetch as jest.Mock).mock.calls[0];
+    expect(url).toContain("dataset_name=my_ds");
+  });
+
+  it("omits dataset_name from the URL when not provided", async () => {
+    await downloadTableCSV("chat1", "t", {});
+    const [url] = (global.fetch as jest.Mock).mock.calls[0];
+    expect(url).not.toContain("dataset_name=");
+  });
+
+  it("uses GET method", async () => {
+    await downloadTableCSV("chat1", "t", {});
+    const [, options] = (global.fetch as jest.Mock).mock.calls[0];
+    expect(options.method).toBe("GET");
+  });
+
+  it("sends Authorization header when a token is stored", async () => {
+    localStorage.setItem("token", "tok-abc");
+    await downloadTableCSV("chat1", "t", {});
+    const [, options] = (global.fetch as jest.Mock).mock.calls[0];
+    expect(options.headers).toMatchObject({ Authorization: "Bearer tok-abc" });
+  });
+
+  it("throws ApiError on non-OK response", async () => {
+    global.fetch = jest
+      .fn()
+      .mockResolvedValue({ ok: false, status: 404, blob: jest.fn() });
+    await expect(downloadTableCSV("chat1", "t", {})).rejects.toMatchObject({ status: 404 });
   });
 });

@@ -9,6 +9,7 @@ import type {
   ChatStateResponse,
   ChatStreamEvent,
   ProvenanceNodesResponse,
+  TableQueryResponse,
   TableRow,
 } from "../types";
 
@@ -135,6 +136,52 @@ export async function deleteChat(
 /* -------------------------------------------------------------------------- */
 /* Provenance / exports                                                        */
 /* -------------------------------------------------------------------------- */
+
+export async function queryTable(
+  chat_id: string,
+  table_id: string,
+  params: {
+    limit?: number;
+    offset?: number;
+    order_by?: string;
+    order_dir?: string;
+    search?: string;
+    dataset_name?: string;
+  },
+  token?: string,
+): Promise<TableQueryResponse> {
+  const query = new URLSearchParams({ table_id });
+  if (params.limit !== undefined) query.set("limit", String(params.limit));
+  if (params.offset !== undefined) query.set("offset", String(params.offset));
+  if (params.order_by) query.set("order_by", params.order_by);
+  if (params.order_dir) query.set("order_dir", params.order_dir);
+  if (params.search) query.set("search", params.search);
+  if (params.dataset_name) query.set("dataset_name", params.dataset_name);
+  return request<TableQueryResponse>(`/chat/table_query/${chat_id}?${query}`, { method: "GET" }, token);
+}
+
+export async function downloadTableCSV(
+  chat_id: string,
+  table_id: string,
+  params: { dataset_name?: string },
+  token?: string,
+): Promise<Blob> {
+  const query = new URLSearchParams({ table_id });
+  if (params.dataset_name) query.set("dataset_name", params.dataset_name);
+
+  const headers: Record<string, string> = {};
+  const authToken = token ?? getStoredToken();
+  if (authToken) headers.Authorization = `Bearer ${authToken}`;
+
+  const response = await fetch(
+    `${CONFIG.BACKEND_BASE_URL}/chat/table_download/${chat_id}?${query}`,
+    { method: "GET", headers },
+  );
+  if (!response.ok) {
+    throw new ApiError(response.status, "Failed to download table CSV.");
+  }
+  return response.blob();
+}
 
 export async function getProvenanceNodes(
   chat_id: string,

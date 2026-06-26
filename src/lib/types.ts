@@ -120,6 +120,7 @@ export interface ChatStateResponse {
   state: ConductorState;
   prov_steps: string[];
   retrieved_tables: Record<string, TableRow[]>;
+  dataset_name?: string | null;
 }
 
 export interface ChatStreamEvent {
@@ -145,6 +146,12 @@ export interface ChatHistoryResponse {
   chat_id: string;
   messages: ChatMessage[];
   dataset_name?: string | null;
+}
+
+export interface TableQueryResponse {
+  rows: TableRow[];
+  total_count: number;
+  columns: string[];
 }
 
 export interface ProvenanceNode {

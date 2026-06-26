@@ -4,16 +4,30 @@ type TablePreviewProps = {
   title?: string;
   rows: TableRow[];
   columnDescriptions?: Record<string, string>;
+  onExpand?: () => void;
 };
 
-export function TablePreview({ title, rows, columnDescriptions }: TablePreviewProps) {
+export function TablePreview({ title, rows, columnDescriptions, onExpand }: TablePreviewProps) {
   const columns = rows.length > 0 ? Object.keys(rows[0]) : [];
 
   return (
     <div className="space-y-2">
-      {title ? (
-        <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate/70">
-          {title}
+      {(title || onExpand) ? (
+        <div className="flex items-center justify-between gap-2">
+          {title ? (
+            <div className="min-w-0 flex-1 truncate text-xs font-semibold uppercase tracking-[0.22em] text-slate/70">
+              {title}
+            </div>
+          ) : <span className="flex-1" />}
+          {onExpand && (
+            <button
+              onClick={onExpand}
+              className="cursor-pointer rounded-lg border border-sand-strong/70 bg-card px-2 py-0.5 text-[0.65rem] font-semibold text-slate/60 hover:text-ink hover:border-slate/40 transition leading-none"
+              title="Open full table explorer"
+            >
+              ↗ Expand
+            </button>
+          )}
         </div>
       ) : null}
       <div className="overflow-hidden rounded-2xl border border-sand-strong/70 bg-card/90 shadow-sm">

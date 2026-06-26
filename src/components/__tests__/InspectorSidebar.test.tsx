@@ -6,6 +6,24 @@ jest.mock("marked", () => ({
   marked: { parse: (text: string) => `<p>${text}</p>` },
 }));
 
+// Stub TableExplorerModal so InspectorSidebar tests don't need to deal with
+// its internal queryTable fetch. Tests for modal behaviour live in
+// TableExplorerModal.test.tsx.
+jest.mock("../TableExplorerModal", () => ({
+  TableExplorerModal: ({
+    tableName,
+    onClose,
+  }: {
+    tableName: string;
+    onClose: () => void;
+  }) => (
+    <div data-testid="table-explorer-modal">
+      <span>{tableName}</span>
+      <button onClick={onClose}>Close Explorer</button>
+    </div>
+  ),
+}));
+
 import {
   InspectorSidebar,
   hasSidebarContent,
@@ -189,6 +207,82 @@ describe("InspectorSidebar – section expand/collapse", () => {
     render(<InspectorSidebar {...defaultProps} />);
     await user.click(screen.getByText("Retrieve Tables"));
     expect(screen.getByText("users")).toBeInTheDocument();
+  });
+});
+
+describe("InspectorSidebar – table expand", () => {
+  it("shows Expand button in Retrieve Tables section when expanded", async () => {
+    const user = userEvent.setup();
+    render(<InspectorSidebar {...defaultProps} />);
+    await user.click(screen.getByText("Retrieve Tables"));
+    expect(screen.getByRole("button", { name: /expand/i })).toBeInTheDocument();
+  });
+
+  it("clicking Expand on a retrieved table opens the explorer modal", async () => {
+    const user = userEvent.setup();
+    render(<InspectorSidebar {...defaultProps} />);
+    await user.click(screen.getByText("Retrieve Tables"));
+    await user.click(screen.getByRole("button", { name: /expand/i }));
+    expect(screen.getByTestId("table-explorer-modal")).toBeInTheDocument();
+  });
+
+  it("modal shows the retrieved table name", async () => {
+    const user = userEvent.setup();
+    render(<InspectorSidebar {...defaultProps} />);
+    await user.click(screen.getByText("Retrieve Tables"));
+    await user.click(screen.getByRole("button", { name: /expand/i }));
+    expect(screen.getByTestId("table-explorer-modal")).toHaveTextContent("users");
+  });
+
+  it("modal closes when its onClose callback is invoked", async () => {
+    const user = userEvent.setup();
+    render(<InspectorSidebar {...defaultProps} />);
+    await user.click(screen.getByText("Retrieve Tables"));
+    await user.click(screen.getByRole("button", { name: /expand/i }));
+    expect(screen.getByTestId("table-explorer-modal")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /close explorer/i }));
+    expect(screen.queryByTestId("table-explorer-modal")).not.toBeInTheDocument();
+  });
+
+  it("shows Expand button in Materialize Views when a target view is present", async () => {
+    const user = userEvent.setup();
+    render(<InspectorSidebar {...defaultProps} />);
+    await user.click(screen.getByText("Materialize Views"));
+    expect(screen.getByRole("button", { name: /expand/i })).toBeInTheDocument();
+  });
+
+  it("does not show Expand button in Execute Script when executionResult is empty", async () => {
+    const user = userEvent.setup();
+    render(<InspectorSidebar {...defaultProps} executionResult={[]} />);
+    await user.click(screen.getByText("Execute Script"));
+    expect(screen.queryByRole("button", { name: /expand/i })).not.toBeInTheDocument();
+  });
+
+  it("shows Expand button in Execute Script when executionResult has rows", async () => {
+    const user = userEvent.setup();
+    render(
+      <InspectorSidebar
+        {...defaultProps}
+        executionResult={[{ result: "42" }] as TableRow[]}
+      />,
+    );
+    await user.click(screen.getByText("Execute Script"));
+    expect(screen.getByRole("button", { name: /expand/i })).toBeInTheDocument();
+  });
+
+  it("clicking Expand on execution result opens modal with 'Execution result' title", async () => {
+    const user = userEvent.setup();
+    render(
+      <InspectorSidebar
+        {...defaultProps}
+        executionResult={[{ result: "42" }] as TableRow[]}
+      />,
+    );
+    await user.click(screen.getByText("Execute Script"));
+    await user.click(screen.getByRole("button", { name: /expand/i }));
+    expect(screen.getByTestId("table-explorer-modal")).toHaveTextContent(
+      "Execution result",
+    );
   });
 });
 
