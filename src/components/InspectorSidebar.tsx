@@ -200,6 +200,9 @@ function ExecuteScriptStep({
   const [explanation, setExplanation] = useState<string | null>(
     sidebar?.state?.s_description || null,
   );
+  const [showExplanation, setShowExplanation] = useState(
+    !!sidebar?.state?.s_description,
+  );
 
   const script = sidebar?.state?.S?.trim() || "";
 
@@ -211,17 +214,30 @@ function ExecuteScriptStep({
     });
   };
 
-  const handleExplain = async () => {
+  const handleExplainToggle = async () => {
+    if (explanation) {
+      setShowExplanation((v) => !v);
+      return;
+    }
     setExplaining(true);
     try {
       const desc = await onExplain();
       setExplanation(desc);
+      setShowExplanation(true);
     } catch {
       // silently fail — user can retry
     } finally {
       setExplaining(false);
     }
   };
+
+  const explainLabel = explaining
+    ? "Explaining..."
+    : explanation
+      ? showExplanation
+        ? "Hide Explanation"
+        : "Show Explanation"
+      : "Explain Script";
 
   return (
     <div className="space-y-3">
@@ -248,13 +264,13 @@ function ExecuteScriptStep({
         </button>
         <button
           className="cursor-pointer rounded-2xl border border-sand-strong/70 bg-card px-4 py-3 text-sm font-semibold text-slate hover:text-ink transition disabled:opacity-50 disabled:cursor-not-allowed"
-          onClick={handleExplain}
+          onClick={handleExplainToggle}
           disabled={!script || explaining}
         >
-          {explaining ? "Explaining..." : "Explain Script"}
+          {explainLabel}
         </button>
       </div>
-      {explanation && (
+      {showExplanation && explanation && (
         <div className="rounded-2xl border border-sand-strong/70 bg-sand/30 px-4 py-3">
           <p className="text-xs font-semibold text-slate/60 uppercase tracking-wide mb-1">
             What this script does

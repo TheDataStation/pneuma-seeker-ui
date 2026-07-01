@@ -382,14 +382,38 @@ describe("InspectorSidebar – explain script", () => {
     await user.click(screen.getByText("Execute Script"));
     expect(screen.getByText("Pre-loaded explanation.")).toBeInTheDocument();
     expect(mockExplainScript).not.toHaveBeenCalled();
+    // Button label changes to "Hide Explanation" once an explanation is available
+    expect(screen.getByRole("button", { name: /hide explanation/i })).toBeInTheDocument();
   });
 
-  it("button reverts to 'Explain Script' after call completes", async () => {
+  it("changes button label to 'Hide Explanation' after fetching", async () => {
     const user = userEvent.setup();
     render(<InspectorSidebar {...defaultProps} />);
     await user.click(screen.getByText("Execute Script"));
     await user.click(screen.getByRole("button", { name: /explain script/i }));
     await screen.findByText("This script computes results.");
-    expect(screen.getByRole("button", { name: /explain script/i })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /hide explanation/i })).toBeInTheDocument();
+  });
+
+  it("clicking 'Hide Explanation' hides the explanation box", async () => {
+    const user = userEvent.setup();
+    render(<InspectorSidebar {...defaultProps} />);
+    await user.click(screen.getByText("Execute Script"));
+    await user.click(screen.getByRole("button", { name: /explain script/i }));
+    await screen.findByText("This script computes results.");
+    await user.click(screen.getByRole("button", { name: /hide explanation/i }));
+    expect(screen.queryByText("This script computes results.")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /show explanation/i })).toBeInTheDocument();
+  });
+
+  it("clicking 'Show Explanation' reveals the explanation box again", async () => {
+    const user = userEvent.setup();
+    render(<InspectorSidebar {...defaultProps} />);
+    await user.click(screen.getByText("Execute Script"));
+    await user.click(screen.getByRole("button", { name: /explain script/i }));
+    await screen.findByText("This script computes results.");
+    await user.click(screen.getByRole("button", { name: /hide explanation/i }));
+    await user.click(screen.getByRole("button", { name: /show explanation/i }));
+    expect(screen.getByText("This script computes results.")).toBeInTheDocument();
   });
 });
