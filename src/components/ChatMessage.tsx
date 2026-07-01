@@ -106,9 +106,10 @@ export function ChatMessage({ message, isLatestAssistant = false }: { message: C
           </div>
         )}
         
-        {/* Render final message content */}
+        {/* Render final message content. fade-in softens the handoff so the
+            answer doesn't just pop in exactly as the thinking process collapses. */}
         {message.content ? (
-          <p className="whitespace-pre-wrap">{message.content}</p>
+          <p className="whitespace-pre-wrap fade-in">{message.content}</p>
         ) : (
           // If content is empty but it has thoughts, it's currently actively generating its thoughts step
           !isUser && <span className="inline-flex h-2 w-2 rounded-full bg-slate/40 animate-bounce" />

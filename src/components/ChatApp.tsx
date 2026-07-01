@@ -288,7 +288,7 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
         }));
         handleUnauthorized(err);
       });
-  }, [activeChatId, hasLoadedChats]);
+  }, [activeChatId, hasLoadedChats, handleUnauthorized, updateChatState]);
 
   const refreshSidebar = useCallback(
     async (chatId: string, force: boolean = false) => {
@@ -322,6 +322,11 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
 
   useEffect(() => {
     if (!hasLoadedChats || !activeChatId) return;
+    // Standard "fetch on ID change" pattern: refreshSidebar synchronously
+    // marks status "Refreshing..." before awaiting the network call. That's
+    // an intentional, immediate loading indicator, not an accidental
+    // cascading update.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refreshSidebar(activeChatId);
   }, [activeChatId, hasLoadedChats, refreshSidebar]);
 
@@ -338,15 +343,19 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
     isHistoryLoading,
   } = activeChat;
 
-  const retrievedTables = sidebar?.retrieved_tables ?? {};
   const retrievedTableNames = useMemo(
-    () => Object.keys(retrievedTables),
-    [retrievedTables],
+    () => Object.keys(sidebar?.retrieved_tables ?? {}),
+    [sidebar],
   );
   const provSteps = sidebar?.prov_steps ?? [];
 
   useEffect(() => {
     if (!activeChatId) return;
+    // Resets the selected table index when the retrieved-table set changes
+    // (e.g. new chat, or new tables retrieved mid-conversation). Guarded by
+    // the `prev.tableIndex === 0 ? prev : ...` no-op check, so this only
+    // ever fires the one time it's actually needed, not on every render.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     updateChatState(activeChatId, (prev) =>
       prev.tableIndex === 0 ? prev : { ...prev, tableIndex: 0 },
     );
@@ -354,6 +363,8 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
 
   useEffect(() => {
     if (!activeChatId) return;
+    // Same reset pattern as tableIndex above, for the provenance step list.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     updateChatState(activeChatId, (prev) =>
       prev.provIndex === 0 ? prev : { ...prev, provIndex: 0 },
     );
@@ -607,19 +618,29 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
 
   return (
     <div className="flex h-screen flex-1 flex-col overflow-hidden">
-      {/* Mobile backdrop — tapping it closes the sidebar */}
-      {isChatListOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/50 sm:hidden"
-          aria-hidden="true"
-          onClick={() => setIsChatListOpen(false)}
-        />
-      )}
-
       <div className="app-shell flex flex-1 min-h-0 flex-col overflow-hidden border border-white/70 p-3 lg:p-4 fade-in">
         <div
           className={`flex min-h-0 flex-1 ${isChatListOpen ? "gap-6" : "gap-0"}`}
         >
+          {/*
+           * Mobile backdrop — tapping it closes the sidebar.
+           * Must live inside .app-shell (not as its sibling): .app-shell's
+           * backdrop-filter creates a CSS stacking context, which traps the
+           * sidebar's z-40 so it can only be compared against elements within
+           * that same context. A `fixed` sibling of .app-shell would always
+           * paint above the (non-positioned) app-shell box regardless of any
+           * z-index inside it, which made the sidebar render underneath the
+           * backdrop and become illegible.
+           */}
+          {isChatListOpen && (
+            <div
+              data-testid="chat-list-backdrop"
+              className="fixed inset-0 z-30 bg-black/50 sm:hidden"
+              aria-hidden="true"
+              onClick={() => setIsChatListOpen(false)}
+            />
+          )}
+
           <ChatSidebar
             chatSessions={chatSessions}
             activeChatId={activeChatId}

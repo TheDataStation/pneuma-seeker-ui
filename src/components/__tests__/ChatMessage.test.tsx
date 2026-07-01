@@ -44,6 +44,16 @@ describe("ChatMessage – assistant bubble", () => {
     );
     expect(container.querySelector(".animate-bounce")).not.toBeInTheDocument();
   });
+
+  // Regression: the final answer used to pop in abruptly at the exact instant
+  // the thinking process started its 500ms collapse transition, making the
+  // handoff feel jarring. A fade-in softens that switch.
+  it("fades in the final answer instead of popping in abruptly", () => {
+    render(
+      <ChatMessage message={{ role: "assistant", content: "Final answer" }} />,
+    );
+    expect(screen.getByText("Final answer")).toHaveClass("fade-in");
+  });
 });
 
 describe("ChatMessage – Thinking Process", () => {

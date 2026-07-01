@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { ChatApp } from "@/components/ChatApp";
 
 // ---------------------------------------------------------------------------
@@ -125,7 +126,7 @@ describe("ChatApp – auth bootstrap", () => {
 
   it("redirects to login on 401 error during bootstrap", async () => {
     localStorage.setItem("token", "bad-token");
-    const err = new (ApiError as any)(401, "Unauthorized");
+    const err = new ApiError(401, "Unauthorized");
     mockGetCurrentUser.mockRejectedValue(err);
     mockGetAccessibleDatasets.mockRejectedValue(err);
 
@@ -205,5 +206,69 @@ describe("ChatApp – chat list", () => {
     await waitFor(() => {
       expect(screen.getByText("My first chat")).toBeInTheDocument();
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Mobile sidebar backdrop stacking
+// ---------------------------------------------------------------------------
+//
+// Regression coverage for a bug where the mobile drawer backdrop rendered
+// *above* the sidebar instead of behind it, making the sidebar's text
+// illegible. Root cause: .app-shell has `backdrop-filter`, which creates a
+// CSS stacking context. A `position:fixed` backdrop that is a *sibling* of
+// .app-shell always paints above the (non-positioned) app-shell box,
+// regardless of any z-index nested inside it — including the sidebar's
+// z-40. The fix moves the backdrop to be a descendant of .app-shell so its
+// z-30 is compared directly against the sidebar's z-40 within the same
+// stacking context. jsdom doesn't compute real paint order, so this test
+// asserts the structural fact that makes the fix correct: the backdrop must
+// be nested inside .app-shell, not a sibling of it.
+describe("ChatApp – mobile sidebar backdrop stacking", () => {
+  it("renders the mobile backdrop inside the app-shell stacking context, not as its sibling", async () => {
+    setupAuthSuccess();
+    const { container } = render(<ChatApp />);
+    await waitFor(() => {
+      expect(screen.getByText("Pneuma-Seeker")).toBeInTheDocument();
+    });
+
+    const backdrop = container.querySelector(
+      '[data-testid="chat-list-backdrop"]',
+    );
+    expect(backdrop).toBeInTheDocument();
+    expect(backdrop?.closest(".app-shell")).not.toBeNull();
+  });
+
+  it("does not render the backdrop when the sidebar is closed", async () => {
+    setupAuthSuccess();
+    const user = userEvent.setup();
+    const { container } = render(<ChatApp />);
+    await waitFor(() => {
+      expect(screen.getByText("Pneuma-Seeker")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByLabelText(/hide chats/i));
+
+    expect(
+      container.querySelector('[data-testid="chat-list-backdrop"]'),
+    ).not.toBeInTheDocument();
+  });
+
+  it("closes the sidebar when the backdrop is clicked", async () => {
+    setupAuthSuccess();
+    const user = userEvent.setup();
+    const { container } = render(<ChatApp />);
+    await waitFor(() => {
+      expect(screen.getByText("Pneuma-Seeker")).toBeInTheDocument();
+    });
+
+    const backdrop = container.querySelector(
+      '[data-testid="chat-list-backdrop"]',
+    ) as HTMLElement;
+    await user.click(backdrop);
+
+    expect(
+      container.querySelector('[data-testid="chat-list-backdrop"]'),
+    ).not.toBeInTheDocument();
   });
 });

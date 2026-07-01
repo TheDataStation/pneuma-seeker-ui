@@ -30,6 +30,7 @@ function HistoryLoadingSkeleton() {
 
 export function MainChatArea({ messages, isStreaming, isHistoryLoading, onSend, chatKey }: MainChatAreaProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const isAtBottomRef = useRef(true);
 
   const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
@@ -48,13 +49,23 @@ export function MainChatArea({ messages, isStreaming, isHistoryLoading, onSend, 
     if (isAtBottomRef.current) scrollToBottom();
   }, [messages]);
 
-  // After thoughts collapse animation finishes (~500ms), scroll to reveal the short final answer
+  // Keep pinned to bottom through *any* height change of the message content,
+  // not just discrete `messages` updates — this includes every intermediate
+  // frame of the "thinking process" collapse transition (see ChatMessage.tsx),
+  // not just its start/end. Content can grow very tall while streaming log
+  // lines, then suddenly collapse to a short final answer; without tracking
+  // the transition continuously, the container's scroll position stays
+  // wherever it was mid-collapse and the short final answer ends up scrolled
+  // out of view, appearing "stuck" until the user manually scrolls.
   useEffect(() => {
-    if (!isStreaming) {
-      const timer = setTimeout(() => scrollToBottom(), 550);
-      return () => clearTimeout(timer);
-    }
-  }, [isStreaming]);
+    const content = contentRef.current;
+    if (!content || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => {
+      if (isAtBottomRef.current) scrollToBottom("auto");
+    });
+    observer.observe(content);
+    return () => observer.disconnect();
+  }, [chatKey]);
 
   // Reset "at bottom" tracking when switching chats
   useEffect(() => {
@@ -67,9 +78,12 @@ export function MainChatArea({ messages, isStreaming, isHistoryLoading, onSend, 
         key={chatKey}
         ref={scrollRef}
         onScroll={handleScroll}
+        data-testid="chat-scroll-container"
         className="mt-6 flex min-h-0 flex-1 flex-col overflow-y-auto pr-2 fade-in"
       >
-        {isHistoryLoading ? <HistoryLoadingSkeleton /> : <ChatMessageList messages={messages} />}
+        <div ref={contentRef}>
+          {isHistoryLoading ? <HistoryLoadingSkeleton /> : <ChatMessageList messages={messages} />}
+        </div>
       </div>
       <ChatComposer isSending={isStreaming} onSend={onSend} />
     </main>

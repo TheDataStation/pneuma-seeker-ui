@@ -262,3 +262,40 @@ describe("AppHeader – profile settings link", () => {
     expect(setIsUserMenuOpen).toHaveBeenCalledWith(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Mobile responsiveness
+// ---------------------------------------------------------------------------
+//
+// Regression coverage for the header crowding/overflowing on narrow
+// viewports: the title now shrinks on mobile (growing back at the `sm:`
+// breakpoint) and the dataset selector is width-capped with truncation on
+// mobile so a long dataset name can't push the rest of the header off-screen
+// or force an ugly wrap.
+describe("AppHeader – mobile responsiveness", () => {
+  it("shrinks the title on mobile and grows it back at the sm breakpoint", () => {
+    render(<AppHeader {...defaultProps} />);
+    const title = screen.getByText("Pneuma-Seeker");
+    expect(title).toHaveClass("text-lg");
+    expect(title).toHaveClass("sm:text-2xl");
+  });
+
+  it("truncates a long title instead of overflowing its container", () => {
+    render(<AppHeader {...defaultProps} />);
+    expect(screen.getByText("Pneuma-Seeker")).toHaveClass("truncate");
+  });
+
+  it("caps the dataset selector width on mobile and relaxes it at sm breakpoint", () => {
+    render(
+      <AppHeader
+        {...defaultProps}
+        accessibleDatasets={["a-very-long-dataset-name-that-could-overflow"]}
+        selectedDataset="a-very-long-dataset-name-that-could-overflow"
+      />,
+    );
+    const combobox = screen.getByRole("combobox");
+    expect(combobox).toHaveClass("max-w-[7.5rem]");
+    expect(combobox).toHaveClass("sm:max-w-[16rem]");
+    expect(combobox).toHaveClass("truncate");
+  });
+});

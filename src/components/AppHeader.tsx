@@ -53,8 +53,8 @@ export default function AppHeader({
   }, [setIsUserMenuOpen]);
 
   return (
-    <header className="flex flex-wrap items-center justify-between gap-4">
-      <div className="flex flex-wrap items-center gap-3">
+    <header className="flex flex-wrap items-center justify-between gap-2 sm:gap-4">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <button
           className="cursor-pointer duration-300 hover:brightness-90 rounded-full border border-sand-strong/70 bg-card p-2 text-slate"
           onClick={() => setIsChatListOpen(!isChatListOpen)}
@@ -100,8 +100,8 @@ export default function AppHeader({
           </svg>
         </button>
 
-        <div>
-          <h1 className="font-display text-2xl text-ink sm:text-2xl">
+        <div className="min-w-0">
+          <h1 className="font-display text-lg text-ink sm:text-2xl truncate">
             Pneuma-Seeker
           </h1>
         </div>
@@ -114,7 +114,7 @@ export default function AppHeader({
             handleDatasetChange(e.target.value);
           }}
           disabled={isDatasetLocked}
-          className="cursor-pointer rounded-full border border-sand-strong/70 bg-card px-3 py-1.5 text-sm text-slate duration-300 hover:brightness-90 focus:outline-none"
+          className="cursor-pointer rounded-full border border-sand-strong/70 bg-card px-3 py-1.5 text-sm text-slate duration-300 hover:brightness-90 focus:outline-none max-w-[7.5rem] truncate sm:max-w-[16rem]"
         >
           {accessibleDatasets.map((ds) => (
             <option key={ds} value={ds}>
