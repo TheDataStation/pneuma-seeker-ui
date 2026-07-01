@@ -106,14 +106,14 @@ function MaterializeViewsStep({
 
       {/* Action buttons */}
       <div className="flex flex-col gap-2 pt-1">
-        {sidebar?.state?.is_T_materialized && (
+        {/* {sidebar?.state?.is_T_materialized && (
           <button
             className="cursor-pointer w-full rounded-2xl border border-sand-strong/70 bg-sea px-4 py-3 text-sm font-semibold text-white transition hover:border-ember/50"
             onClick={onTableDownload}
           >
             Download views
           </button>
-        )}
+        )} */}
         {provSteps.length > 0 && (
           <button
             className="cursor-pointer w-full rounded-2xl border border-sand-strong/70 bg-[#800000] px-4 py-3 text-sm font-semibold text-white transition hover:border-ember/50"
@@ -164,14 +164,14 @@ function MaterializeViewsStep({
               Next
             </button>
           </div>
-          {sidebar?.state?.is_T_materialized && (
+          {/* {sidebar?.state?.is_T_materialized && (
             <button
               className="cursor-pointer w-full rounded-2xl border border-sand-strong/70 bg-card px-4 py-3 text-sm font-semibold text-ink transition hover:border-ember/50"
               onClick={onProvenanceDownload}
             >
               Download preparation script
             </button>
-          )}
+          )} */}
         </div>
       )}
     </div>
