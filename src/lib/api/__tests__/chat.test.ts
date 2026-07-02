@@ -6,7 +6,10 @@ if (typeof global.TextDecoder === "undefined") {
   (global as unknown as Record<string, unknown>).TextDecoder = NodeTextDecoder;
 }
 
-const BASE = "http://localhost:8000";
+// Backend routes are mounted under /api (see src/pneuma_seeker/main.py) so a
+// reverse proxy can route by a single unambiguous prefix, without risking
+// collision with same-named frontend page routes.
+const BASE = "http://localhost:8000/api";
 
 beforeEach(() => {
   localStorage.clear();
