@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ChatMessage, ChatMessageList } from "@/components/ChatMessage";
 import type { ChatMessage as ChatMessageType } from "@/lib/types";
@@ -218,87 +218,76 @@ describe("ChatMessage – Thinking Process", () => {
     expect(screen.queryByText(/Thinking Process/i)).not.toBeInTheDocument();
   });
 
-  // Regression: very long thinking streams made the thoughts panel grow
-  // unbounded, which (combined with the auto-scroll-tracking behavior in
-  // MainChatArea) could leave the eventual final answer scrolled out of
-  // view. The panel now caps its own height and scrolls internally instead
-  // of growing the page indefinitely.
-  it("caps the thoughts panel height and makes it independently scrollable", () => {
-    render(<ChatMessage message={streamingMessage} />);
-    const panel = screen.getByTestId("thinking-process-scroll");
-    expect(panel).toHaveClass("max-h-[60vh]");
-    expect(panel).toHaveClass("overflow-auto");
+  // Regression: a very long thinking stream made this panel grow
+  // unbounded, which — combined with a since-fixed auto-scroll race in
+  // MainChatArea — could leave the eventual final answer scrolled out of
+  // view until a manual refresh. Rather than capping height and scrolling
+  // internally (more moving parts, still theoretically unbounded content),
+  // only the most recent RECENT_THOUGHTS_LIMIT lines are kept in the DOM at
+  // all — the panel's height now stays small and roughly constant
+  // regardless of how long the model thinks.
+  it("shows only the most recent thoughts, discarding older ones", () => {
+    render(
+      <ChatMessage
+        message={{
+          role: "assistant",
+          content: "",
+          thoughts: ["Step 1", "Step 2", "Step 3", "Step 4", "Step 5"],
+        }}
+      />,
+    );
+    expect(screen.queryByText(/Step 1\b/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Step 2\b/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Step 3/)).toBeInTheDocument();
+    expect(screen.getByText(/Step 4/)).toBeInTheDocument();
+    expect(screen.getByText(/Step 5/)).toBeInTheDocument();
   });
 
-  it("uses a wrapper cap that safely exceeds the inner panel's cap on any viewport", () => {
-    render(<ChatMessage message={streamingMessage} />);
-    const wrapper = screen.getByTestId("thoughts-wrapper");
-    // max-h-screen (100vh) must stay >= the inner panel's max-h-[60vh] so
-    // the wrapper never clips the (already scrollable) inner panel.
-    expect(wrapper).toHaveClass("max-h-screen");
-  });
-});
-
-describe("ChatMessage – Thinking Process auto-scroll", () => {
-  function mockScrollMetrics(
-    el: HTMLElement,
-    metrics: { scrollTop: number; scrollHeight: number; clientHeight: number },
-  ) {
-    Object.defineProperty(el, "scrollTop", {
-      value: metrics.scrollTop,
-      writable: true,
-      configurable: true,
-    });
-    Object.defineProperty(el, "scrollHeight", {
-      value: metrics.scrollHeight,
-      configurable: true,
-    });
-    Object.defineProperty(el, "clientHeight", {
-      value: metrics.clientHeight,
-      configurable: true,
-    });
-  }
-
-  it("scrolls its own panel to the latest thought as thoughts stream in", () => {
-    const { rerender } = render(
+  it("shows how many earlier steps were hidden", () => {
+    render(
       <ChatMessage
-        message={{ role: "assistant", content: "", thoughts: ["Step 1"] }}
+        message={{
+          role: "assistant",
+          content: "",
+          thoughts: ["Step 1", "Step 2", "Step 3", "Step 4", "Step 5"],
+        }}
       />,
     );
-    const panel = screen.getByTestId("thinking-process-scroll");
-    mockScrollMetrics(panel, { scrollTop: 0, scrollHeight: 500, clientHeight: 100 });
-
-    mockScrollMetrics(panel, { scrollTop: 0, scrollHeight: 900, clientHeight: 100 });
-    rerender(
-      <ChatMessage
-        message={{ role: "assistant", content: "", thoughts: ["Step 1", "Step 2"] }}
-      />,
-    );
-
-    // Instant (direct scrollTop assignment), so this should already reflect
-    // the new bottom immediately after the update.
-    expect(panel.scrollTop).toBe(900);
+    expect(screen.getByText(/2 earlier steps not shown/i)).toBeInTheDocument();
   });
 
-  it("does not force-scroll the panel if the user has scrolled up within it", () => {
-    const { rerender } = render(
+  it("does not show a hidden-steps indicator when thoughts fit within the limit", () => {
+    render(<ChatMessage message={streamingMessage} />); // only 2 thoughts
+    expect(screen.queryByText(/earlier step/i)).not.toBeInTheDocument();
+  });
+
+  it("still shows the true total count in the header even when truncated", () => {
+    render(
       <ChatMessage
-        message={{ role: "assistant", content: "", thoughts: ["Step 1"] }}
+        message={{
+          role: "assistant",
+          content: "",
+          thoughts: ["Step 1", "Step 2", "Step 3", "Step 4", "Step 5"],
+        }}
       />,
     );
-    const panel = screen.getByTestId("thinking-process-scroll");
-    // Simulate the user scrolling up inside the panel, away from the bottom.
-    mockScrollMetrics(panel, { scrollTop: 0, scrollHeight: 900, clientHeight: 100 });
-    fireEvent.scroll(panel);
+    expect(screen.getByText(/Thinking Process \(5\)/i)).toBeInTheDocument();
+  });
 
-    mockScrollMetrics(panel, { scrollTop: 0, scrollHeight: 1200, clientHeight: 100 });
-    rerender(
+  it("pulses the truly latest thought even when earlier ones are hidden", () => {
+    const { container } = render(
       <ChatMessage
-        message={{ role: "assistant", content: "", thoughts: ["Step 1", "Step 2"] }}
+        message={{
+          role: "assistant",
+          content: "",
+          thoughts: ["Step 1", "Step 2", "Step 3", "Step 4", "Step 5"],
+        }}
+        isLatestAssistant={true}
       />,
     );
-
-    expect(panel.scrollTop).toBe(0);
+    const pulsing = container.querySelectorAll(".animate-pulse");
+    expect(pulsing).toHaveLength(1);
+    expect(pulsing[0]).toHaveTextContent("Step 5");
   });
 });
 

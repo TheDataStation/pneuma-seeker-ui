@@ -1,7 +1,16 @@
 // src/components/ChatMessage.tsx
 import type { ChatMessage as ChatMessageType } from "@/lib/types";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { renderMarkdown } from "@/lib/markdown";
+
+// Only the most recent thoughts are kept in the DOM at all — not just
+// visually capped-and-scrollable. A very long thinking phase previously
+// made this panel grow arbitrarily tall, which (even after capping/auto-
+// scrolling it) left room for edge cases in the outer page's auto-scroll
+// tracking. Discarding older lines outright means the panel's height stays
+// small and roughly constant regardless of how long the model thinks,
+// removing the failure mode entirely rather than mitigating it.
+const RECENT_THOUGHTS_LIMIT = 3;
 
 const WELCOME_MESSAGES = [
   "What can I help with?",
@@ -36,26 +45,11 @@ function EmptyState() {
 
 function ThinkingProcess({ thoughts, isLatestAssistant }: { thoughts?: string[], isLatestAssistant: boolean }) {
   const [isExpanded, setIsExpanded] = useState(true);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const isAtBottomRef = useRef(true);
-
-  const handleScroll = () => {
-    const el = scrollRef.current;
-    if (!el) return;
-    isAtBottomRef.current = el.scrollTop + el.clientHeight >= el.scrollHeight - 40;
-  };
-
-  // Keep this panel's own scroll pinned to its latest line as thoughts
-  // stream in, independent of the outer page's scroll. Instant (direct
-  // scrollTop assignment), not smooth/animated — see MainChatArea.tsx's
-  // scrollToBottom for why an animated scroll here would risk the same
-  // "mid-animation frame misread as user scrolled away" race.
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (el && isAtBottomRef.current) el.scrollTop = el.scrollHeight;
-  }, [thoughts]);
 
   if (!thoughts || thoughts.length === 0) return null;
+
+  const visibleThoughts = thoughts.slice(-RECENT_THOUGHTS_LIMIT);
+  const hiddenCount = thoughts.length - visibleThoughts.length;
 
   return (
     <div className="mb-3 border-l-2 border-sand-strong/80 pl-3 text-xs text-slate/70">
@@ -80,19 +74,19 @@ function ThinkingProcess({ thoughts, isLatestAssistant }: { thoughts?: string[],
       </button>
 
       {isExpanded && (
-        <div
-          ref={scrollRef}
-          onScroll={handleScroll}
-          data-testid="thinking-process-scroll"
-          className="flex flex-col gap-1.5 font-mono bg-sand-strong/10 p-2.5 rounded-lg max-w-full max-h-[60vh] overflow-auto"
-        >
-          {thoughts.map((thought, index) => {
-            const isLastLogLine = index === thoughts.length - 1;
+        <div className="flex flex-col gap-1.5 font-mono bg-sand-strong/10 p-2.5 rounded-lg max-w-full overflow-x-auto">
+          {hiddenCount > 0 && (
+            <div className="text-slate/40 italic">
+              {`… ${hiddenCount} earlier step${hiddenCount === 1 ? "" : "s"} not shown …`}
+            </div>
+          )}
+          {visibleThoughts.map((thought, index) => {
+            const isLastLogLine = index === visibleThoughts.length - 1;
             const shouldPulse = isLatestAssistant && isLastLogLine;
 
             return (
               <div
-                key={index}
+                key={thoughts.length - visibleThoughts.length + index}
                 className={`transition-all duration-300 ${shouldPulse ? "animate-pulse font-medium text-ember" : ""}`}
               >
                 &gt; {thought}
@@ -131,11 +125,14 @@ export function ChatMessage({ message, isLatestAssistant = false }: { message: C
           <div
             data-testid="thoughts-wrapper"
             className={`overflow-hidden transition-all duration-500 ease-in-out ${
-              // max-h-screen (100vh) here just needs to safely exceed
-              // ThinkingProcess's own inner cap (max-h-[60vh]) on any
-              // viewport size, so this wrapper never clips the (already
-              // scrollable) inner panel before its own cap kicks in.
-              message.content ? "max-h-0 opacity-0" : "max-h-screen opacity-100"
+              // ThinkingProcess now only ever renders up to
+              // RECENT_THOUGHTS_LIMIT lines, so its natural height stays
+              // small and roughly constant — max-h-48 comfortably fits that
+              // without leaving a large gap between this cap and the actual
+              // content (a large gap makes a max-height collapse transition
+              // look backloaded: nothing visibly shrinks until the
+              // interpolated value finally dips below the natural height).
+              message.content ? "max-h-0 opacity-0" : "max-h-48 opacity-100"
             }`}
           >
             <ThinkingProcess
