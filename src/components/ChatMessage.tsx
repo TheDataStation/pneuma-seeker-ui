@@ -1,6 +1,7 @@
 // src/components/ChatMessage.tsx
 import type { ChatMessage as ChatMessageType } from "@/lib/types";
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { renderMarkdown } from "@/lib/markdown";
 
 const WELCOME_MESSAGES = [
   "What can I help with?",
@@ -35,24 +36,42 @@ function EmptyState() {
 
 function ThinkingProcess({ thoughts, isLatestAssistant }: { thoughts?: string[], isLatestAssistant: boolean }) {
   const [isExpanded, setIsExpanded] = useState(true);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const isAtBottomRef = useRef(true);
+
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    isAtBottomRef.current = el.scrollTop + el.clientHeight >= el.scrollHeight - 40;
+  };
+
+  // Keep this panel's own scroll pinned to its latest line as thoughts
+  // stream in, independent of the outer page's scroll. Instant (direct
+  // scrollTop assignment), not smooth/animated — see MainChatArea.tsx's
+  // scrollToBottom for why an animated scroll here would risk the same
+  // "mid-animation frame misread as user scrolled away" race.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el && isAtBottomRef.current) el.scrollTop = el.scrollHeight;
+  }, [thoughts]);
 
   if (!thoughts || thoughts.length === 0) return null;
 
   return (
     <div className="mb-3 border-l-2 border-sand-strong/80 pl-3 text-xs text-slate/70">
-      <button 
+      <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
         className="flex items-center gap-1.5 font-medium text-slate/50 hover:text-slate duration-200 uppercase tracking-wider mb-2"
       >
-        <svg 
-          xmlns="http://www.w3.org/2000/svg" 
-          width="12" 
-          height="12" 
-          viewBox="0 0 24 24" 
-          fill="none" 
-          stroke="currentColor" 
-          strokeWidth="2.5" 
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
           className={`transform transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
         >
           <path d="m9 18 6-6-6-6" />
@@ -61,14 +80,19 @@ function ThinkingProcess({ thoughts, isLatestAssistant }: { thoughts?: string[],
       </button>
 
       {isExpanded && (
-        <div className="flex flex-col gap-1.5 font-mono bg-sand-strong/10 p-2.5 rounded-lg max-w-full overflow-x-auto">
+        <div
+          ref={scrollRef}
+          onScroll={handleScroll}
+          data-testid="thinking-process-scroll"
+          className="flex flex-col gap-1.5 font-mono bg-sand-strong/10 p-2.5 rounded-lg max-w-full max-h-[60vh] overflow-auto"
+        >
           {thoughts.map((thought, index) => {
             const isLastLogLine = index === thoughts.length - 1;
             const shouldPulse = isLatestAssistant && isLastLogLine;
-            
+
             return (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 className={`transition-all duration-300 ${shouldPulse ? "animate-pulse font-medium text-ember" : ""}`}
               >
                 &gt; {thought}
@@ -86,6 +110,17 @@ export function ChatMessage({ message, isLatestAssistant = false }: { message: C
   const align = isUser ? "items-end" : "items-start";
   const bubble = roleStyles[message.role] ?? roleStyles.assistant;
 
+  // Memoized so a re-render caused by unrelated state (isLatestAssistant
+  // flipping, a sibling message updating, etc.) doesn't re-run the full
+  // marked+DOMPurify pipeline on an unchanged string. This matters most
+  // while streaming: content grows on every chunk, so without this, each
+  // of the many re-renders a streaming response causes would re-parse the
+  // entire accumulated string from scratch, not just the new increment.
+  const renderedContent = useMemo(
+    () => (!isUser && message.content ? renderMarkdown(message.content) : ""),
+    [isUser, message.content],
+  );
+
   return (
     <div className={`flex flex-col ${align} gap-2 rise-in`}>
       <div
@@ -96,7 +131,11 @@ export function ChatMessage({ message, isLatestAssistant = false }: { message: C
           <div
             data-testid="thoughts-wrapper"
             className={`overflow-hidden transition-all duration-500 ease-in-out ${
-              message.content ? "max-h-0 opacity-0" : "max-h-[1000px] opacity-100"
+              // max-h-screen (100vh) here just needs to safely exceed
+              // ThinkingProcess's own inner cap (max-h-[60vh]) on any
+              // viewport size, so this wrapper never clips the (already
+              // scrollable) inner panel before its own cap kicks in.
+              message.content ? "max-h-0 opacity-0" : "max-h-screen opacity-100"
             }`}
           >
             <ThinkingProcess
@@ -107,9 +146,20 @@ export function ChatMessage({ message, isLatestAssistant = false }: { message: C
         )}
         
         {/* Render final message content. fade-in softens the handoff so the
-            answer doesn't just pop in exactly as the thinking process collapses. */}
+            answer doesn't just pop in exactly as the thinking process collapses.
+            Only assistant/system output is markdown-rendered — user input is
+            never reinterpreted as markdown, and always shown as literal text. */}
         {message.content ? (
-          <p className="whitespace-pre-wrap fade-in">{message.content}</p>
+          isUser ? (
+            <p className="whitespace-pre-wrap fade-in">{message.content}</p>
+          ) : (
+            <div
+              className="markdown-content fade-in"
+              dangerouslySetInnerHTML={{
+                __html: renderedContent,
+              }}
+            />
+          )
         ) : (
           // If content is empty but it has thoughts, it's currently actively generating its thoughts step
           !isUser && <span className="inline-flex h-2 w-2 rounded-full bg-slate/40 animate-bounce" />

@@ -695,6 +695,15 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
 
               {showInspector && (
                 <InspectorSidebar
+                  // Force a full remount on chat switch. InspectorSidebar and
+                  // its step sub-components (MaterializeViewsStep,
+                  // ExecuteScriptStep) hold local useState seeded from the
+                  // sidebar prop (e.g. `explanation`, `showExplanation`,
+                  // `targetViewIndex`, `expandedSections`) — that initial
+                  // value is only read on first mount, so without this key
+                  // the same component instance persists across chats and
+                  // keeps showing the *previous* chat's stale data.
+                  key={activeChatId}
                   activeChatId={activeChatId}
                   sidebar={sidebar}
                   tableIndex={tableIndex}

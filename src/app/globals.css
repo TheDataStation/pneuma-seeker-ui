@@ -114,3 +114,127 @@ body {
     transform: translateY(0);
   }
 }
+
+/* Rendered, sanitized markdown from assistant messages (see lib/markdown.ts).
+   Tailwind's preflight strips default list/heading/margin styling, so these
+   need to be restored explicitly using the app's existing color variables. */
+.markdown-content {
+  white-space: normal;
+}
+
+.markdown-content > *:first-child {
+  margin-top: 0;
+}
+
+.markdown-content > *:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-content p {
+  margin: 0.5em 0;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  font-weight: 600;
+  margin: 0.9em 0 0.4em;
+  line-height: 1.3;
+}
+
+.markdown-content h1 {
+  font-size: 1.35em;
+}
+.markdown-content h2 {
+  font-size: 1.2em;
+}
+.markdown-content h3 {
+  font-size: 1.08em;
+}
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  font-size: 1em;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  margin: 0.5em 0;
+  padding-left: 1.4em;
+}
+
+.markdown-content ul {
+  list-style: disc;
+}
+
+.markdown-content ol {
+  list-style: decimal;
+}
+
+.markdown-content li {
+  margin: 0.2em 0;
+}
+
+.markdown-content a {
+  color: rgb(var(--color-ember));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.markdown-content a:hover {
+  opacity: 0.85;
+}
+
+.markdown-content code {
+  background: rgba(var(--color-ink), 0.06);
+  border-radius: 4px;
+  padding: 0.15em 0.4em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+
+.markdown-content pre {
+  background: rgba(var(--color-ink), 0.06);
+  border-radius: 8px;
+  padding: 0.75em 1em;
+  overflow-x: auto;
+  margin: 0.6em 0;
+}
+
+.markdown-content pre code {
+  background: none;
+  padding: 0;
+}
+
+.markdown-content blockquote {
+  border-left: 2px solid rgba(var(--color-sand-strong));
+  padding-left: 0.9em;
+  margin: 0.6em 0;
+  color: rgb(var(--color-slate));
+}
+
+.markdown-content hr {
+  border: none;
+  border-top: 1px solid rgba(var(--color-sand-strong));
+  margin: 1em 0;
+}
+
+.markdown-content table {
+  border-collapse: collapse;
+  margin: 0.6em 0;
+  width: 100%;
+}
+
+.markdown-content th,
+.markdown-content td {
+  border: 1px solid rgba(var(--color-sand-strong));
+  padding: 0.35em 0.6em;
+  text-align: left;
+}
+
+.markdown-content th {
+  font-weight: 600;
+}

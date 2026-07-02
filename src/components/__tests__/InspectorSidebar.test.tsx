@@ -1,14 +1,18 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-
-// marked uses ES module syntax and can't be parsed by Jest without transforms
-jest.mock("marked", () => ({
-  marked: { parse: (text: string) => `<p>${text}</p>` },
-}));
 
 jest.mock("../../lib/api/chat", () => ({
   explainScript: jest.fn(),
 }));
+
+// Spy on the real renderMarkdown (not a stub) so content-rendering
+// assertions elsewhere in this file are unaffected — used by the
+// memoization describe block to count how many times the markdown
+// pipeline actually runs.
+jest.mock("../../lib/markdown", () => {
+  const actual = jest.requireActual("../../lib/markdown");
+  return { renderMarkdown: jest.fn(actual.renderMarkdown) };
+});
 
 // Stub TableExplorerModal so InspectorSidebar tests don't need to deal with
 // its internal queryTable fetch. Tests for modal behaviour live in
@@ -33,9 +37,11 @@ import {
   hasSidebarContent,
 } from "@/components/InspectorSidebar";
 import { explainScript } from "../../lib/api/chat";
+import { renderMarkdown } from "../../lib/markdown";
 import type { ChatStateResponse, TableRow } from "@/lib/types";
 
 const mockExplainScript = explainScript as jest.Mock;
+const mockRenderMarkdown = renderMarkdown as jest.Mock;
 
 // ---------------------------------------------------------------------------
 // hasSidebarContent (pure function)
@@ -158,6 +164,132 @@ describe("InspectorSidebar – step rendering", () => {
       />,
     );
     expect(screen.queryByText("Retrieve Tables")).not.toBeInTheDocument();
+  });
+});
+
+// Regression: ChatApp renders <InspectorSidebar key={activeChatId} .../>.
+// Without that key, switching chats reuses the same component instance, and
+// local useState seeded from the sidebar prop (explanation, showExplanation,
+// expandedSections, etc.) only reads its initial value on first mount — so
+// a previous chat's cached script explanation kept showing for a completely
+// different chat. These tests simulate exactly what changing `key` does
+// (React unmounts the old instance and mounts a fresh one) via RTL's
+// `rerender` with a different `key` prop between renders.
+describe("InspectorSidebar – state does not leak across chats (remount via key)", () => {
+  it("does not show the previous chat's cached explanation after switching chats", async () => {
+    const user = userEvent.setup();
+    const sidebarA: ChatStateResponse = {
+      ...mockSidebar,
+      state: { ...mockSidebar.state, s_description: "Chat A's explanation." },
+    };
+    const sidebarB: ChatStateResponse = {
+      ...mockSidebar,
+      state: { ...mockSidebar.state, s_description: undefined },
+    };
+
+    const { rerender } = render(
+      <InspectorSidebar
+        key="chat-a"
+        {...defaultProps}
+        activeChatId="chat-a"
+        sidebar={sidebarA}
+      />,
+    );
+    await user.click(screen.getByText("Execute Script"));
+    expect(screen.getByText("Chat A's explanation.")).toBeInTheDocument();
+
+    rerender(
+      <InspectorSidebar
+        key="chat-b"
+        {...defaultProps}
+        activeChatId="chat-b"
+        sidebar={sidebarB}
+      />,
+    );
+
+    expect(
+      screen.queryByText("Chat A's explanation."),
+    ).not.toBeInTheDocument();
+  });
+
+  it("resets expanded accordion sections after switching chats", async () => {
+    const user = userEvent.setup();
+    const sidebarA: ChatStateResponse = { ...mockSidebar };
+    const sidebarB: ChatStateResponse = { ...mockSidebar };
+
+    const { rerender } = render(
+      <InspectorSidebar
+        key="chat-a"
+        {...defaultProps}
+        activeChatId="chat-a"
+        sidebar={sidebarA}
+      />,
+    );
+    await user.click(screen.getByText("Execute Script"));
+    expect(screen.getByText("print('hello')")).toBeInTheDocument();
+
+    rerender(
+      <InspectorSidebar
+        key="chat-b"
+        {...defaultProps}
+        activeChatId="chat-b"
+        sidebar={sidebarB}
+      />,
+    );
+
+    expect(screen.queryByText("print('hello')")).not.toBeInTheDocument();
+  });
+});
+
+describe("InspectorSidebar – step hints", () => {
+  it("shows a help ('?') button for each step", () => {
+    render(<InspectorSidebar {...defaultProps} />);
+    expect(
+      screen.getAllByRole("button", { name: /what does this step do/i }),
+    ).toHaveLength(3);
+  });
+
+  it("shows the Retrieve Tables hint on hover", () => {
+    render(<InspectorSidebar {...defaultProps} />);
+    const buttons = screen.getAllByRole("button", {
+      name: /what does this step do/i,
+    });
+    fireEvent.mouseEnter(buttons[0]);
+    expect(
+      screen.getByText(/searches your dataset/i),
+    ).toBeInTheDocument();
+  });
+
+  it("shows the Materialize Views hint on hover", () => {
+    render(<InspectorSidebar {...defaultProps} />);
+    const buttons = screen.getAllByRole("button", {
+      name: /what does this step do/i,
+    });
+    fireEvent.mouseEnter(buttons[1]);
+    expect(screen.getByText(/builds views/i)).toBeInTheDocument();
+  });
+
+  it("shows the Execute Script hint on hover", () => {
+    render(<InspectorSidebar {...defaultProps} />);
+    const buttons = screen.getAllByRole("button", {
+      name: /what does this step do/i,
+    });
+    fireEvent.mouseEnter(buttons[2]);
+    expect(
+      screen.getByText(/runs the generated analysis script/i),
+    ).toBeInTheDocument();
+  });
+
+  // Regression guard: the help button lives inside the same header row that
+  // toggles the accordion section open/closed on click.
+  it("clicking the help button does not expand or collapse the step section", async () => {
+    const user = userEvent.setup();
+    render(<InspectorSidebar {...defaultProps} />);
+    const buttons = screen.getAllByRole("button", {
+      name: /what does this step do/i,
+    });
+    await user.click(buttons[2]); // Execute Script's help button
+    expect(screen.queryByText("print('hello')")).not.toBeInTheDocument();
   });
 });
 
@@ -317,6 +449,63 @@ describe("InspectorSidebar – copy script", () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// renderMarkdown memoization
+// ---------------------------------------------------------------------------
+//
+// Regression: both the provenance-step and script-explanation markdown
+// blocks called renderMarkdown() inline in JSX with no memoization, so any
+// re-render from unrelated sibling state re-ran the full marked+DOMPurify
+// pipeline on unchanged text.
+describe("InspectorSidebar – renderMarkdown memoization", () => {
+  it("does not re-run renderMarkdown for the provenance step when an unrelated prop changes", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<InspectorSidebar {...defaultProps} />);
+    await user.click(screen.getByText("Materialize Views"));
+    await user.click(
+      screen.getByRole("button", { name: /show preparation steps/i }),
+    );
+
+    const callsAfterShow = mockRenderMarkdown.mock.calls.length;
+    expect(callsAfterShow).toBeGreaterThan(0);
+
+    rerender(
+      <InspectorSidebar
+        {...defaultProps}
+        executionResult={[{ x: 1 }] as TableRow[]}
+      />,
+    );
+
+    expect(mockRenderMarkdown).toHaveBeenCalledTimes(callsAfterShow);
+  });
+
+  it("does not re-run renderMarkdown for the script explanation when an unrelated prop changes", async () => {
+    const user = userEvent.setup();
+    const sidebarWithDescription: ChatStateResponse = {
+      ...mockSidebar,
+      state: { ...mockSidebar.state, s_description: "Cached explanation." },
+    };
+    const { rerender } = render(
+      <InspectorSidebar {...defaultProps} sidebar={sidebarWithDescription} />,
+    );
+    await user.click(screen.getByText("Execute Script"));
+    expect(screen.getByText("Cached explanation.")).toBeInTheDocument();
+
+    const callsAfterShow = mockRenderMarkdown.mock.calls.length;
+    expect(callsAfterShow).toBeGreaterThan(0);
+
+    rerender(
+      <InspectorSidebar
+        {...defaultProps}
+        sidebar={sidebarWithDescription}
+        executionResult={[{ x: 1 }] as TableRow[]}
+      />,
+    );
+
+    expect(mockRenderMarkdown).toHaveBeenCalledTimes(callsAfterShow);
+  });
+});
+
 describe("InspectorSidebar – explain script", () => {
   it("shows Explain Script button when script is present", async () => {
     const user = userEvent.setup();
@@ -352,6 +541,35 @@ describe("InspectorSidebar – explain script", () => {
     await user.click(screen.getByText("Execute Script"));
     await user.click(screen.getByRole("button", { name: /explain script/i }));
     expect(await screen.findByText("This script computes results.")).toBeInTheDocument();
+  });
+
+  // Regression: explainScript's LLM-generated response used to render as
+  // plain text, so markdown syntax like **bold** showed up as literal
+  // asterisks instead of being formatted.
+  it("renders markdown in the explanation text", async () => {
+    mockExplainScript.mockResolvedValue({
+      description: "This script **filters** rows by `status`.",
+    });
+    const user = userEvent.setup();
+    const { container } = render(<InspectorSidebar {...defaultProps} />);
+    await user.click(screen.getByText("Execute Script"));
+    await user.click(screen.getByRole("button", { name: /explain script/i }));
+    await screen.findByText(/filters/);
+    expect(container.querySelector("strong")).toHaveTextContent("filters");
+    expect(container.querySelector("code")).toHaveTextContent("status");
+  });
+
+  it("sanitizes malicious HTML in the explanation text", async () => {
+    mockExplainScript.mockResolvedValue({
+      description: 'safe text <script>alert(1)</script><img src=x onerror=alert(1)>',
+    });
+    const user = userEvent.setup();
+    const { container } = render(<InspectorSidebar {...defaultProps} />);
+    await user.click(screen.getByText("Execute Script"));
+    await user.click(screen.getByRole("button", { name: /explain script/i }));
+    await screen.findByText(/safe text/);
+    expect(container.querySelector("script")).not.toBeInTheDocument();
+    expect(container.innerHTML).not.toContain("onerror");
   });
 
   it("shows 'Explaining...' while the call is in flight", async () => {

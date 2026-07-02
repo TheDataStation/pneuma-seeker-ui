@@ -1,7 +1,21 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ChatMessage, ChatMessageList } from "@/components/ChatMessage";
 import type { ChatMessage as ChatMessageType } from "@/lib/types";
+
+// Spy on the real renderMarkdown (not a stub) so existing content-rendering
+// assertions below are unaffected — only used by the memoization describe
+// block to count how many times the markdown pipeline actually runs.
+jest.mock("../../lib/markdown", () => {
+  const actual = jest.requireActual("../../lib/markdown");
+  return { renderMarkdown: jest.fn(actual.renderMarkdown) };
+});
+import { renderMarkdown } from "@/lib/markdown";
+const mockRenderMarkdown = renderMarkdown as jest.Mock;
+
+beforeEach(() => {
+  mockRenderMarkdown.mockClear();
+});
 
 // ---------------------------------------------------------------------------
 // ChatMessage
@@ -20,6 +34,79 @@ describe("ChatMessage – user bubble", () => {
       />,
     );
     expect(screen.queryByText(/Thinking Process/i)).not.toBeInTheDocument();
+  });
+
+  // Regression guard: only assistant/system output is markdown-rendered.
+  // User-typed text must always show up verbatim, not be reinterpreted.
+  it("does not render markdown syntax in user messages", () => {
+    const { container } = render(
+      <ChatMessage message={{ role: "user", content: "**not bold**" }} />,
+    );
+    expect(screen.getByText("**not bold**")).toBeInTheDocument();
+    expect(container.querySelector("strong")).not.toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Markdown rendering (assistant/system messages only)
+// ---------------------------------------------------------------------------
+
+describe("ChatMessage – markdown rendering", () => {
+  it("renders **bold** markdown as a <strong> element", () => {
+    const { container } = render(
+      <ChatMessage message={{ role: "assistant", content: "**important**" }} />,
+    );
+    const strong = container.querySelector("strong");
+    expect(strong).toBeInTheDocument();
+    expect(strong).toHaveTextContent("important");
+  });
+
+  it("renders markdown links with safe target/rel attributes", () => {
+    const { container } = render(
+      <ChatMessage
+        message={{
+          role: "assistant",
+          content: "[docs](https://example.com)",
+        }}
+      />,
+    );
+    const link = container.querySelector("a");
+    expect(link).toHaveAttribute("href", "https://example.com");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  });
+
+  it("sanitizes malicious HTML embedded in assistant content", () => {
+    const { container } = render(
+      <ChatMessage
+        message={{
+          role: "assistant",
+          content: "before <script>alert(1)</script> after",
+        }}
+      />,
+    );
+    expect(container.querySelector("script")).not.toBeInTheDocument();
+    expect(container.innerHTML).not.toContain("alert(1)");
+    expect(screen.getByText(/before/)).toBeInTheDocument();
+  });
+
+  it("sanitizes an event-handler-attribute XSS payload", () => {
+    const { container } = render(
+      <ChatMessage
+        message={{
+          role: "assistant",
+          content: '<img src="x" onerror="alert(1)">',
+        }}
+      />,
+    );
+    expect(container.innerHTML).not.toContain("onerror");
+  });
+
+  it("renders markdown for system-role messages too", () => {
+    const { container } = render(
+      <ChatMessage message={{ role: "system", content: "**note**" }} />,
+    );
+    expect(container.querySelector("strong")).toBeInTheDocument();
   });
 });
 
@@ -49,10 +136,13 @@ describe("ChatMessage – assistant bubble", () => {
   // the thinking process started its 500ms collapse transition, making the
   // handoff feel jarring. A fade-in softens that switch.
   it("fades in the final answer instead of popping in abruptly", () => {
-    render(
+    const { container } = render(
       <ChatMessage message={{ role: "assistant", content: "Final answer" }} />,
     );
-    expect(screen.getByText("Final answer")).toHaveClass("fade-in");
+    expect(screen.getByText("Final answer")).toBeInTheDocument();
+    expect(container.querySelector(".markdown-content")).toHaveClass(
+      "fade-in",
+    );
   });
 });
 
@@ -127,6 +217,89 @@ describe("ChatMessage – Thinking Process", () => {
     );
     expect(screen.queryByText(/Thinking Process/i)).not.toBeInTheDocument();
   });
+
+  // Regression: very long thinking streams made the thoughts panel grow
+  // unbounded, which (combined with the auto-scroll-tracking behavior in
+  // MainChatArea) could leave the eventual final answer scrolled out of
+  // view. The panel now caps its own height and scrolls internally instead
+  // of growing the page indefinitely.
+  it("caps the thoughts panel height and makes it independently scrollable", () => {
+    render(<ChatMessage message={streamingMessage} />);
+    const panel = screen.getByTestId("thinking-process-scroll");
+    expect(panel).toHaveClass("max-h-[60vh]");
+    expect(panel).toHaveClass("overflow-auto");
+  });
+
+  it("uses a wrapper cap that safely exceeds the inner panel's cap on any viewport", () => {
+    render(<ChatMessage message={streamingMessage} />);
+    const wrapper = screen.getByTestId("thoughts-wrapper");
+    // max-h-screen (100vh) must stay >= the inner panel's max-h-[60vh] so
+    // the wrapper never clips the (already scrollable) inner panel.
+    expect(wrapper).toHaveClass("max-h-screen");
+  });
+});
+
+describe("ChatMessage – Thinking Process auto-scroll", () => {
+  function mockScrollMetrics(
+    el: HTMLElement,
+    metrics: { scrollTop: number; scrollHeight: number; clientHeight: number },
+  ) {
+    Object.defineProperty(el, "scrollTop", {
+      value: metrics.scrollTop,
+      writable: true,
+      configurable: true,
+    });
+    Object.defineProperty(el, "scrollHeight", {
+      value: metrics.scrollHeight,
+      configurable: true,
+    });
+    Object.defineProperty(el, "clientHeight", {
+      value: metrics.clientHeight,
+      configurable: true,
+    });
+  }
+
+  it("scrolls its own panel to the latest thought as thoughts stream in", () => {
+    const { rerender } = render(
+      <ChatMessage
+        message={{ role: "assistant", content: "", thoughts: ["Step 1"] }}
+      />,
+    );
+    const panel = screen.getByTestId("thinking-process-scroll");
+    mockScrollMetrics(panel, { scrollTop: 0, scrollHeight: 500, clientHeight: 100 });
+
+    mockScrollMetrics(panel, { scrollTop: 0, scrollHeight: 900, clientHeight: 100 });
+    rerender(
+      <ChatMessage
+        message={{ role: "assistant", content: "", thoughts: ["Step 1", "Step 2"] }}
+      />,
+    );
+
+    // Instant (direct scrollTop assignment), so this should already reflect
+    // the new bottom immediately after the update.
+    expect(panel.scrollTop).toBe(900);
+  });
+
+  it("does not force-scroll the panel if the user has scrolled up within it", () => {
+    const { rerender } = render(
+      <ChatMessage
+        message={{ role: "assistant", content: "", thoughts: ["Step 1"] }}
+      />,
+    );
+    const panel = screen.getByTestId("thinking-process-scroll");
+    // Simulate the user scrolling up inside the panel, away from the bottom.
+    mockScrollMetrics(panel, { scrollTop: 0, scrollHeight: 900, clientHeight: 100 });
+    fireEvent.scroll(panel);
+
+    mockScrollMetrics(panel, { scrollTop: 0, scrollHeight: 1200, clientHeight: 100 });
+    rerender(
+      <ChatMessage
+        message={{ role: "assistant", content: "", thoughts: ["Step 1", "Step 2"] }}
+      />,
+    );
+
+    expect(panel.scrollTop).toBe(0);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -171,5 +344,49 @@ describe("ChatMessageList", () => {
       { role: "assistant", content: "pong" },
     ];
     expect(() => render(<ChatMessageList messages={messages} />)).not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// renderMarkdown memoization
+// ---------------------------------------------------------------------------
+//
+// Regression: renderMarkdown(message.content) used to run inline in JSX with
+// no memoization. Since a streaming assistant message re-renders on every
+// appended chunk (and also re-renders for unrelated reasons, e.g.
+// isLatestAssistant flipping once a later message arrives), this meant the
+// full marked+DOMPurify pipeline re-ran on the entire accumulated string on
+// every single re-render, not just when content actually changed —
+// quadratic work across a streamed response.
+describe("ChatMessage – renderMarkdown memoization", () => {
+  it("does not re-run renderMarkdown when an unrelated prop changes", () => {
+    const message: ChatMessageType = { role: "assistant", content: "**bold**" };
+    const { rerender } = render(
+      <ChatMessage message={message} isLatestAssistant={true} />,
+    );
+    expect(mockRenderMarkdown).toHaveBeenCalledTimes(1);
+
+    // Same message object/content, only isLatestAssistant changes.
+    rerender(<ChatMessage message={message} isLatestAssistant={false} />);
+
+    expect(mockRenderMarkdown).toHaveBeenCalledTimes(1);
+  });
+
+  it("re-runs renderMarkdown when content actually changes (streaming)", () => {
+    const { rerender } = render(
+      <ChatMessage message={{ role: "assistant", content: "Hello" }} />,
+    );
+    expect(mockRenderMarkdown).toHaveBeenCalledTimes(1);
+
+    rerender(
+      <ChatMessage message={{ role: "assistant", content: "Hello world" }} />,
+    );
+
+    expect(mockRenderMarkdown).toHaveBeenCalledTimes(2);
+  });
+
+  it("never calls renderMarkdown for user messages", () => {
+    render(<ChatMessage message={{ role: "user", content: "**not markdown**" }} />);
+    expect(mockRenderMarkdown).not.toHaveBeenCalled();
   });
 });

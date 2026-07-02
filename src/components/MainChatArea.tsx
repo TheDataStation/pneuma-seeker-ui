@@ -33,9 +33,18 @@ export function MainChatArea({ messages, isStreaming, isHistoryLoading, onSend, 
   const contentRef = useRef<HTMLDivElement>(null);
   const isAtBottomRef = useRef(true);
 
-  const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
+  // Always instant, never "smooth": during a long streamed response this
+  // fires repeatedly in quick succession (once per thought line). A smooth
+  // scroll takes time to animate, and native `scroll` events fire at
+  // intermediate, not-yet-caught-up positions while it's in flight — those
+  // events reach handleScroll below, which can misread a mid-animation
+  // frame as "user scrolled away" and permanently stop auto-scroll for the
+  // rest of the message (including the final answer). Instant scrolling
+  // reaches the target synchronously, so there's no ambiguous frame to
+  // misread.
+  const scrollToBottom = () => {
     const el = scrollRef.current;
-    if (el) el.scrollTo({ top: el.scrollHeight, behavior });
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "auto" });
   };
 
   const handleScroll = () => {
@@ -61,7 +70,7 @@ export function MainChatArea({ messages, isStreaming, isHistoryLoading, onSend, 
     const content = contentRef.current;
     if (!content || typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(() => {
-      if (isAtBottomRef.current) scrollToBottom("auto");
+      if (isAtBottomRef.current) scrollToBottom();
     });
     observer.observe(content);
     return () => observer.disconnect();

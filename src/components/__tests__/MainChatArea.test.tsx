@@ -106,6 +106,63 @@ describe("MainChatArea – rendering", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Scroll behavior must always be instant, never "smooth"
+// ---------------------------------------------------------------------------
+//
+// Regression: the messages-triggered auto-scroll used to default to a
+// "smooth" (animated) scroll. During a long streamed response, that effect
+// fires on every appended thought line in quick succession — each smooth
+// scroll interrupts the previous one, and native `scroll` events fire at
+// intermediate, not-yet-arrived positions while an animation is still
+// catching up. handleScroll reads those events too, and can misread one of
+// those mid-animation frames as "the user scrolled away", which permanently
+// disables auto-scroll for the rest of that message (including the final
+// answer once thoughts collapse) until the user manually refreshes.
+// Instant scrolling reaches its target synchronously, so there's no
+// intermediate frame to misread.
+describe("MainChatArea – scroll behavior is always instant", () => {
+  it("scrolls instantly (not smoothly) on initial mount", () => {
+    render(<MainChatArea {...defaultProps} />);
+    expect(Element.prototype.scrollTo).toHaveBeenCalledWith({
+      top: expect.any(Number),
+      behavior: "auto",
+    });
+  });
+
+  it("scrolls instantly (not smoothly) when messages update while pinned to bottom", () => {
+    const { rerender } = render(<MainChatArea {...defaultProps} />);
+    (Element.prototype.scrollTo as jest.Mock).mockClear();
+
+    const updatedMessages: ChatMessage[] = [
+      ...messages,
+      { role: "assistant", content: "", thoughts: ["Step 1"] },
+    ];
+    rerender(<MainChatArea {...defaultProps} messages={updatedMessages} />);
+
+    expect(Element.prototype.scrollTo).toHaveBeenCalledWith({
+      top: expect.any(Number),
+      behavior: "auto",
+    });
+  });
+
+  it("never calls scrollTo with behavior: smooth across mount, message updates, and resize", () => {
+    const { rerender } = render(<MainChatArea {...defaultProps} />);
+    const updatedMessages: ChatMessage[] = [
+      ...messages,
+      { role: "assistant", content: "", thoughts: ["Step 1", "Step 2", "Step 3"] },
+    ];
+    rerender(<MainChatArea {...defaultProps} messages={updatedMessages} />);
+    MockResizeObserver.instances[0]?.trigger();
+
+    const calls = (Element.prototype.scrollTo as jest.Mock).mock.calls;
+    expect(calls.length).toBeGreaterThan(0);
+    for (const [arg] of calls) {
+      expect(arg.behavior).not.toBe("smooth");
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Sending
 // ---------------------------------------------------------------------------
 

@@ -9,11 +9,6 @@ import { ChatApp } from "@/components/ChatApp";
 const mockReplace = jest.fn();
 const mockPush = jest.fn();
 
-// InspectorSidebar (used by ChatApp) imports marked which is an ES module
-jest.mock("marked", () => ({
-  marked: { parse: (text: string) => `<p>${text}</p>` },
-}));
-
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ replace: mockReplace, push: mockPush }),
 }));

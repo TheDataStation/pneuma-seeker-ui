@@ -1,11 +1,23 @@
 // src/components/InspectorSidebar.tsx
 "use client";
-import { useState } from "react";
-import { marked } from "marked";
+import { useMemo, useState } from "react";
+import { renderMarkdown } from "@/lib/markdown";
 import { TablePreview } from "@/components/TablePreview";
 import { TableExplorerModal } from "@/components/TableExplorerModal";
+import { HelpTooltip } from "@/components/HelpTooltip";
 import { explainScript } from "@/lib/api/chat";
-import type { ChatStateResponse, TableRow } from "@/lib/types";
+import type { ChatRuntime, ChatStateResponse, TableRow } from "@/lib/types";
+
+// Plain-language explanations of what each pipeline step actually does,
+// shown via a "?" hint next to the step heading.
+const STEP_HINTS: Record<string, string> = {
+  retrieveTables:
+    "Searches your dataset and pulls in the tables most relevant to your question.",
+  materializeViews:
+    "Builds views — derived tables — from the underlying data sources: joining, filtering, and shaping them into the exact structure needed to answer your question.",
+  executeScript:
+    "Runs the generated analysis script against the materialized views to produce your final answer.",
+};
 
 interface InspectorSidebarProps {
   activeChatId: string;
@@ -16,7 +28,7 @@ interface InspectorSidebarProps {
   queryInput: string;
   queryResult: TableRow[];
   sidebarStatus: string;
-  updateChatState: (chatId: string, updater: (current: any) => any) => void;
+  updateChatState: (chatId: string, updater: (current: ChatRuntime) => ChatRuntime) => void;
   onExecute: () => Promise<void>;
   onTableDownload: () => Promise<void>;
   onProvenanceDownload: () => Promise<void>;
@@ -39,7 +51,7 @@ interface MaterializeViewsStepProps {
   sidebar: ChatStateResponse | null;
   provIndex: number;
   activeChatId: string;
-  updateChatState: (chatId: string, updater: (current: any) => any) => void;
+  updateChatState: (chatId: string, updater: (current: ChatRuntime) => ChatRuntime) => void;
   onTableDownload: () => Promise<void>;
   onProvenanceDownload: () => Promise<void>;
   onExpand: (tableId: string, tableName: string) => void;
@@ -60,6 +72,14 @@ function MaterializeViewsStep({
   const targetViews = sidebar?.state?.T ? Object.entries(sidebar.state.T) : [];
   const provSteps = sidebar?.prov_steps ?? [];
   const currentView = targetViews[targetViewIndex];
+  const currentProvStep = provSteps[provIndex] ?? "";
+  // Memoized: avoids re-running marked+DOMPurify on every re-render this
+  // component gets from sibling state (targetViewIndex, showProvenance)
+  // when the actual provenance text hasn't changed.
+  const renderedProvStep = useMemo(
+    () => renderMarkdown(currentProvStep),
+    [currentProvStep],
+  );
 
   return (
     <div className="space-y-4">
@@ -131,7 +151,7 @@ function MaterializeViewsStep({
             <div
               className="text-sm leading-relaxed text-ink break-words [&_pre]:mt-3 [&_pre]:rounded-2xl [&_pre]:bg-sand/80 [&_pre]:p-3 [&_pre]:overflow-x-auto [&_code]:text-[0.82rem] [&_code]:break-all"
               dangerouslySetInnerHTML={{
-                __html: marked.parse(provSteps[provIndex] ?? ""),
+                __html: renderedProvStep,
               }}
             />
           </div>
@@ -202,6 +222,12 @@ function ExecuteScriptStep({
   );
   const [showExplanation, setShowExplanation] = useState(
     !!sidebar?.state?.s_description,
+  );
+  // Memoized: explanation is fetched once, but re-renders from unrelated
+  // sibling state (copied, executionResult) would otherwise re-parse it.
+  const renderedExplanation = useMemo(
+    () => (explanation ? renderMarkdown(explanation) : ""),
+    [explanation],
   );
 
   const script = sidebar?.state?.S?.trim() || "";
@@ -275,7 +301,10 @@ function ExecuteScriptStep({
           <p className="text-xs font-semibold text-slate/60 uppercase tracking-wide mb-1">
             What this script does
           </p>
-          <p className="text-sm text-ink leading-relaxed">{explanation}</p>
+          <div
+            className="markdown-content text-sm text-ink leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: renderedExplanation }}
+          />
         </div>
       )}
       {executionResult.length > 0 && (
@@ -468,6 +497,9 @@ export function InspectorSidebar({
                 {idx + 1}
               </span>
               <h3 className="font-display text-xl">{step.label}</h3>
+              {STEP_HINTS[step.key] && (
+                <HelpTooltip text={STEP_HINTS[step.key]} />
+              )}
               <span className="text-xs text-slate/40">
                 {expandedSections[step.key] ? "▲" : "▼"}
               </span>

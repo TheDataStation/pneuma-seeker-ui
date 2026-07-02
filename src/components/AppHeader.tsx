@@ -1,7 +1,8 @@
 // src/components/AppHeader.tsx
 import { User } from "@/lib/types";
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
+import { useClickOutside } from "@/lib/useClickOutside";
 
 type AppHeaderProps = {
   isChatListOpen: boolean;
@@ -38,19 +39,7 @@ export default function AppHeader({
 }: AppHeaderProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsUserMenuOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [setIsUserMenuOpen]);
+  useClickOutside(menuRef, () => setIsUserMenuOpen(false));
 
   return (
     <header className="flex flex-wrap items-center justify-between gap-2 sm:gap-4">
