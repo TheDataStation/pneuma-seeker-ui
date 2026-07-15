@@ -5,9 +5,17 @@ type ChatComposerProps = {
   isSending: boolean;
   onSend: (message: string) => void;
   className?: string;
+  planMode?: boolean;
+  onTogglePlanMode?: () => void;
 };
 
-export function ChatComposer({ isSending, onSend, className }: ChatComposerProps) {
+export function ChatComposer({
+  isSending,
+  onSend,
+  className,
+  planMode = false,
+  onTogglePlanMode,
+}: ChatComposerProps) {
   const [value, setValue] = useState("");
 
   const handleSend = () => {
@@ -22,8 +30,9 @@ export function ChatComposer({ isSending, onSend, className }: ChatComposerProps
       <div className="flex flex-col gap-3">
         <div className="relative">
           <textarea
-            className="min-h-[60px] w-full resize-none rounded-xl border border-sand-strong/70 bg-card px-4 py-3 pr-14 text-sm text-ink shadow-sm outline-none transition focus:border-ember/50 focus:ring-2 focus:ring-ember/20 overflow-x-hidden"
+            className="min-h-[40px] w-full resize-none rounded-xl border border-sand-strong/70 bg-card px-4 py-2 pr-12 text-sm text-ink shadow-sm outline-none transition focus:border-ember/50 focus:ring-2 focus:ring-ember/20 overflow-x-hidden"
             placeholder="Ask Pneuma-Seeker..."
+            rows={1}
             value={value}
             onChange={(event) => setValue(event.target.value)}
             onKeyDown={(event) => {
@@ -35,7 +44,7 @@ export function ChatComposer({ isSending, onSend, className }: ChatComposerProps
           />
           <button
             type="button"
-            className="cursor-pointer absolute bottom-3 right-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-ember text-white shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+            className="cursor-pointer absolute top-1/2 right-1.5 -translate-y-1/2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-ember text-white shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
             onClick={handleSend}
             disabled={isSending || !value.trim()}
             aria-label={isSending ? "Thinking" : "Send"}
@@ -43,7 +52,7 @@ export function ChatComposer({ isSending, onSend, className }: ChatComposerProps
           >
             <svg
               viewBox="0 0 20 20"
-              className="h-5 w-5"
+              className="h-3.5 w-3.5"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
@@ -56,6 +65,40 @@ export function ChatComposer({ isSending, onSend, className }: ChatComposerProps
             </svg>
           </button>
         </div>
+        {onTogglePlanMode && (
+          <div className="flex items-center">
+            <button
+              type="button"
+              aria-pressed={planMode}
+              onClick={onTogglePlanMode}
+              className={`cursor-pointer inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition ${
+                planMode
+                  ? "border-ember/60 bg-ember/10 text-ember"
+                  : "border-sand-strong/70 text-slate/70 hover:border-sand-strong hover:text-slate"
+              }`}
+              title={
+                planMode
+                  ? "Plan mode on: the next message will get a proposal instead of a computed answer"
+                  : "Plan mode: propose a plan for confirmation before computing an answer"
+              }
+            >
+              <svg
+                viewBox="0 0 20 20"
+                className="h-3.5 w-3.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M4 4h12v3H4z" />
+                <path d="M4 10h8M4 13h5" />
+              </svg>
+              Plan mode
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

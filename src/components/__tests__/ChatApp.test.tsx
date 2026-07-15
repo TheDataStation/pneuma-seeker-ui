@@ -8,9 +8,16 @@ import { ChatApp } from "@/components/ChatApp";
 
 const mockReplace = jest.fn();
 const mockPush = jest.fn();
+// Stable object reference across renders: ChatApp memoizes callbacks off
+// `router` via useCallback, so a mock that returns a *new* object literal on
+// every call (the previous version of this mock) breaks that memoization and
+// causes an effect depending on the memoized callback to re-fire every
+// render — an infinite loop once a test drives enough render cycles (e.g.
+// typing into the composer) to expose it, rather than just rendering once.
+const mockRouter = { replace: mockReplace, push: mockPush };
 
 jest.mock("next/navigation", () => ({
-  useRouter: () => ({ replace: mockReplace, push: mockPush }),
+  useRouter: () => mockRouter,
 }));
 
 jest.mock("../../lib/api", () => ({
@@ -46,6 +53,8 @@ import {
   getAccessibleDatasets,
   getAllChats,
   getChatState,
+  getChatHistory,
+  streamChat,
   ApiError,
 } from "@/lib/api";
 
@@ -53,6 +62,14 @@ const mockGetCurrentUser = getCurrentUser as jest.Mock;
 const mockGetAccessibleDatasets = getAccessibleDatasets as jest.Mock;
 const mockGetAllChats = getAllChats as jest.Mock;
 const mockGetChatState = getChatState as jest.Mock;
+const mockGetChatHistory = getChatHistory as jest.Mock;
+const mockStreamChat = streamChat as jest.Mock;
+
+async function* toAsyncGenerator<T>(items: T[]): AsyncGenerator<T> {
+  for (const item of items) {
+    yield item;
+  }
+}
 
 const mockUser = {
   user_id: "u1",
@@ -219,6 +236,123 @@ describe("ChatApp – chat list", () => {
 // stacking context. jsdom doesn't compute real paint order, so this test
 // asserts the structural fact that makes the fix correct: the backdrop must
 // be nested inside .app-shell, not a sibling of it.
+describe("ChatApp – plan mode", () => {
+  beforeEach(() => {
+    mockGetChatHistory.mockResolvedValue({
+      user_id: "u1",
+      chat_id: "test-uuid",
+      messages: [],
+      dataset_name: "db1",
+    });
+  });
+
+  async function renderAndOpenComposer() {
+    setupAuthSuccess();
+    const user = userEvent.setup();
+    render(<ChatApp />);
+    await waitFor(() => {
+      expect(screen.getByRole("combobox")).toHaveValue("db1");
+    });
+    return user;
+  }
+
+  it("sends plan_mode: true in the streamChat payload when the toggle is on", async () => {
+    mockStreamChat.mockReturnValue(
+      toAsyncGenerator([{ sender: "done", text: "done", time_stamp: 0 }]),
+    );
+    const user = await renderAndOpenComposer();
+
+    await user.click(screen.getByRole("button", { name: /plan mode/i }));
+    await user.type(
+      screen.getByPlaceholderText("Ask Pneuma-Seeker..."),
+      "what should I look at?",
+    );
+    await user.click(screen.getByRole("button", { name: /^send$/i }));
+
+    await waitFor(() => {
+      expect(mockStreamChat).toHaveBeenCalledWith(
+        expect.objectContaining({ plan_mode: true }),
+      );
+    });
+  });
+
+  it("sends plan_mode: false by default", async () => {
+    mockStreamChat.mockReturnValue(
+      toAsyncGenerator([{ sender: "done", text: "done", time_stamp: 0 }]),
+    );
+    const user = await renderAndOpenComposer();
+
+    await user.type(
+      screen.getByPlaceholderText("Ask Pneuma-Seeker..."),
+      "what should I look at?",
+    );
+    await user.click(screen.getByRole("button", { name: /^send$/i }));
+
+    await waitFor(() => {
+      expect(mockStreamChat).toHaveBeenCalledWith(
+        expect.objectContaining({ plan_mode: false }),
+      );
+    });
+  });
+
+  it("marks the message as a plan proposal and resets the toggle on a 'plan' event", async () => {
+    mockStreamChat.mockReturnValue(
+      toAsyncGenerator([
+        { sender: "plan", text: "Here is my proposal.", time_stamp: 0 },
+        { sender: "done", text: "done", time_stamp: 0 },
+      ]),
+    );
+    const user = await renderAndOpenComposer();
+
+    const toggle = screen.getByRole("button", { name: /plan mode/i });
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+
+    await user.type(
+      screen.getByPlaceholderText("Ask Pneuma-Seeker..."),
+      "what should I look at?",
+    );
+    await user.click(screen.getByRole("button", { name: /^send$/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Here is my proposal.")).toBeInTheDocument();
+    });
+    expect(
+      screen.getByText(/proposed plan.*reply to confirm or adjust/i),
+    ).toBeInTheDocument();
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("does not reset the toggle when the send errors before any proposal arrives", async () => {
+    mockStreamChat.mockReturnValue(
+      // eslint-disable-next-line require-yield
+      (async function* () {
+        throw new Error("network error");
+      })(),
+    );
+    const user = await renderAndOpenComposer();
+
+    const toggle = screen.getByRole("button", { name: /plan mode/i });
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+
+    await user.type(
+      screen.getByPlaceholderText("Ask Pneuma-Seeker..."),
+      "what should I look at?",
+    );
+    await user.click(screen.getByRole("button", { name: /^send$/i }));
+
+    // isStreaming flips back to false once handleSend's finally block runs,
+    // observable via the send button reverting from "Thinking" to "Send".
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: /^send$/i }),
+      ).toBeInTheDocument();
+    });
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
 describe("ChatApp – mobile sidebar backdrop stacking", () => {
   it("renders the mobile backdrop inside the app-shell stacking context, not as its sibling", async () => {
     setupAuthSuccess();

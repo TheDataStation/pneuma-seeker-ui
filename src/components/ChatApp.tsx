@@ -70,6 +70,7 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
     Record<string, ChatRuntime>
   >({});
   const [activeChatId, setActiveChatId] = useState(initialChatId ?? "");
+  const [planMode, setPlanMode] = useState(false);
   const [hasLoadedChats, setHasLoadedChats] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const loadedHistoryIds = useRef<Set<string>>(new Set());
@@ -203,7 +204,13 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
     if (!isChatListLoading && chatHasMore && chatNextOffset !== null) {
       fetchChatList(chatSearchQuery, chatNextOffset, true);
     }
-  }, [isChatListLoading, chatHasMore, chatNextOffset, chatSearchQuery, fetchChatList]);
+  }, [
+    isChatListLoading,
+    chatHasMore,
+    chatNextOffset,
+    chatSearchQuery,
+    fetchChatList,
+  ]);
 
   const handleChatSearch = useCallback(
     (query: string) => {
@@ -424,12 +431,14 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
 
     let assistantText = "";
     let thoughtsArray: string[] = [];
+    const sentAsPlanMode = planMode;
 
     try {
       for await (const event of streamChat({
         chat_id: chatId,
         message: content,
         dataset_name: selectedDataset,
+        plan_mode: sentAsPlanMode,
       })) {
         if (event.sender === "log") {
           const cleanLog = event.text.replace(/^LOG\s*:\s*/i, ""); // Strip "LOG:" safely
@@ -463,6 +472,28 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
             };
             return { ...prev, messages: updated };
           });
+        }
+
+        if (event.sender === "plan") {
+          assistantText += event.text;
+          updateChatState(chatId, (prev) => {
+            const updated = [...prev.messages];
+            const current = updated[assistantIndex] ?? {
+              role: "assistant" as const,
+              content: "",
+            };
+            updated[assistantIndex] = {
+              ...current,
+              content: assistantText,
+              thoughts: thoughtsArray,
+              is_plan_proposal: true,
+            };
+            return { ...prev, messages: updated };
+          });
+          // Reset specifically on receiving a proposal, not in the generic
+          // `finally` below — a failed/errored send should leave the toggle
+          // as the user left it, since no proposal was ever shown.
+          setPlanMode(false);
         }
 
         if (event.sender === "done") {
@@ -691,6 +722,8 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
                 isHistoryLoading={isHistoryLoading}
                 onSend={handleSend}
                 chatKey={activeChatId}
+                planMode={planMode}
+                onTogglePlanMode={() => setPlanMode((prev) => !prev)}
               />
 
               {showInspector && (

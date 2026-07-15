@@ -5,6 +5,10 @@ export interface ChatMessage {
   role: ChatRole;
   content: string;
   thoughts?: string[];
+  // Field name matches the backend's wire format (LLMMessage's is_plan_proposal
+  // key) directly — ChatMessage is used both for live-streamed messages and for
+  // API history responses with no transformation layer in between.
+  is_plan_proposal?: boolean;
 }
 
 export interface ChatRuntime {
@@ -125,7 +129,7 @@ export interface ChatStateResponse {
 }
 
 export interface ChatStreamEvent {
-  sender: "log" | "assistant" | "done";
+  sender: "log" | "assistant" | "plan" | "done";
   text: string;
   time_stamp: number;
 }
@@ -136,6 +140,7 @@ export interface ChatRequest {
   data_source?: string | null;
   files?: unknown[];
   dataset_name?: string | null;
+  plan_mode?: boolean;
 }
 
 export interface AccessibleDatasetResponse {

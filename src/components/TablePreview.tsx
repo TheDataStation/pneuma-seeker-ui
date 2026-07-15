@@ -8,7 +8,11 @@ type TablePreviewProps = {
 };
 
 export function TablePreview({ title, rows, columnDescriptions, onExpand }: TablePreviewProps) {
-  const columns = rows.length > 0 ? Object.keys(rows[0]) : [];
+  // Falls back to columnDescriptions' keys when there are no rows, so a
+  // schema-only table (defined but not yet materialized) still shows its
+  // column headers instead of collapsing to "Empty table" with no schema.
+  const columns =
+    rows.length > 0 ? Object.keys(rows[0]) : Object.keys(columnDescriptions ?? {});
 
   return (
     <div className="space-y-2">
@@ -53,7 +57,9 @@ export function TablePreview({ title, rows, columnDescriptions, onExpand }: Tabl
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td className="px-3 py-3 text-slate/70">No rows yet.</td>
+                  <td className="px-3 py-3 text-slate/70" colSpan={columns.length || 1}>
+                    No rows yet.
+                  </td>
                 </tr>
               ) : (
                 rows.map((row, rowIndex) => (

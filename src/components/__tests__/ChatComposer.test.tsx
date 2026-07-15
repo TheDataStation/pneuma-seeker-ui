@@ -115,3 +115,61 @@ describe("ChatComposer – sending", () => {
     expect(onSend).not.toHaveBeenCalled();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Plan mode toggle
+// ---------------------------------------------------------------------------
+
+describe("ChatComposer – plan mode toggle", () => {
+  it("does not render the toggle when onTogglePlanMode is not provided", () => {
+    render(<ChatComposer {...defaultProps} />);
+    expect(
+      screen.queryByRole("button", { name: /plan mode/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders the toggle when onTogglePlanMode is provided", () => {
+    render(<ChatComposer {...defaultProps} onTogglePlanMode={jest.fn()} />);
+    expect(
+      screen.getByRole("button", { name: /plan mode/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("reflects planMode=false via aria-pressed", () => {
+    render(
+      <ChatComposer
+        {...defaultProps}
+        planMode={false}
+        onTogglePlanMode={jest.fn()}
+      />,
+    );
+    expect(screen.getByRole("button", { name: /plan mode/i })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+  });
+
+  it("reflects planMode=true via aria-pressed", () => {
+    render(
+      <ChatComposer
+        {...defaultProps}
+        planMode={true}
+        onTogglePlanMode={jest.fn()}
+      />,
+    );
+    expect(screen.getByRole("button", { name: /plan mode/i })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  it("calls onTogglePlanMode when clicked", async () => {
+    const onTogglePlanMode = jest.fn();
+    const user = userEvent.setup();
+    render(
+      <ChatComposer {...defaultProps} onTogglePlanMode={onTogglePlanMode} />,
+    );
+    await user.click(screen.getByRole("button", { name: /plan mode/i }));
+    expect(onTogglePlanMode).toHaveBeenCalledTimes(1);
+  });
+});

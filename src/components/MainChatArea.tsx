@@ -11,13 +11,18 @@ interface MainChatAreaProps {
   isHistoryLoading: boolean;
   onSend: (content: string) => Promise<void>;
   chatKey: string;
+  planMode?: boolean;
+  onTogglePlanMode?: () => void;
 }
 
 function HistoryLoadingSkeleton() {
   return (
     <div className="flex flex-col gap-6 px-1 pt-4 animate-pulse">
       {[80, 60, 75].map((w, i) => (
-        <div key={i} className={`flex ${i % 2 === 0 ? "justify-end" : "justify-start"}`}>
+        <div
+          key={i}
+          className={`flex ${i % 2 === 0 ? "justify-end" : "justify-start"}`}
+        >
           <div
             className="h-14 rounded-xl bg-sand-strong/40"
             style={{ width: `${w}%` }}
@@ -28,7 +33,15 @@ function HistoryLoadingSkeleton() {
   );
 }
 
-export function MainChatArea({ messages, isStreaming, isHistoryLoading, onSend, chatKey }: MainChatAreaProps) {
+export function MainChatArea({
+  messages,
+  isStreaming,
+  isHistoryLoading,
+  onSend,
+  chatKey,
+  planMode,
+  onTogglePlanMode,
+}: MainChatAreaProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const isAtBottomRef = useRef(true);
@@ -50,7 +63,8 @@ export function MainChatArea({ messages, isStreaming, isHistoryLoading, onSend, 
   const handleScroll = () => {
     const el = scrollRef.current;
     if (!el) return;
-    isAtBottomRef.current = el.scrollTop + el.clientHeight >= el.scrollHeight - 80;
+    isAtBottomRef.current =
+      el.scrollTop + el.clientHeight >= el.scrollHeight - 80;
   };
 
   // Auto-scroll on new/updated messages while user is near bottom
@@ -91,10 +105,19 @@ export function MainChatArea({ messages, isStreaming, isHistoryLoading, onSend, 
         className="mt-6 flex min-h-0 flex-1 flex-col overflow-y-auto pr-2 fade-in"
       >
         <div ref={contentRef}>
-          {isHistoryLoading ? <HistoryLoadingSkeleton /> : <ChatMessageList messages={messages} />}
+          {isHistoryLoading ? (
+            <HistoryLoadingSkeleton />
+          ) : (
+            <ChatMessageList messages={messages} />
+          )}
         </div>
       </div>
-      <ChatComposer isSending={isStreaming} onSend={onSend} />
+      <ChatComposer
+        isSending={isStreaming}
+        onSend={onSend}
+        planMode={planMode}
+        onTogglePlanMode={onTogglePlanMode}
+      />
     </main>
   );
 }

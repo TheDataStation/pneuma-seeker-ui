@@ -33,7 +33,7 @@ const roleStyles: Record<string, string> = {
 
 function EmptyState() {
   const [message] = useState(
-    () => WELCOME_MESSAGES[Math.floor(Math.random() * WELCOME_MESSAGES.length)]
+    () => WELCOME_MESSAGES[Math.floor(Math.random() * WELCOME_MESSAGES.length)],
   );
   return (
     <div className="flex flex-col items-center justify-center flex-1 h-full gap-3 py-16 text-center">
@@ -43,7 +43,13 @@ function EmptyState() {
   );
 }
 
-function ThinkingProcess({ thoughts, isLatestAssistant }: { thoughts?: string[], isLatestAssistant: boolean }) {
+function ThinkingProcess({
+  thoughts,
+  isLatestAssistant,
+}: {
+  thoughts?: string[];
+  isLatestAssistant: boolean;
+}) {
   const [isExpanded, setIsExpanded] = useState(true);
 
   if (!thoughts || thoughts.length === 0) return null;
@@ -99,7 +105,13 @@ function ThinkingProcess({ thoughts, isLatestAssistant }: { thoughts?: string[],
   );
 }
 
-export function ChatMessage({ message, isLatestAssistant = false }: { message: ChatMessageType; isLatestAssistant?: boolean }) {
+export function ChatMessage({
+  message,
+  isLatestAssistant = false,
+}: {
+  message: ChatMessageType;
+  isLatestAssistant?: boolean;
+}) {
   const isUser = message.role === "user";
   const align = isUser ? "items-end" : "items-start";
   const bubble = roleStyles[message.role] ?? roleStyles.assistant;
@@ -120,6 +132,11 @@ export function ChatMessage({ message, isLatestAssistant = false }: { message: C
       <div
         className={`max-w-[80%] rounded-xl border px-5 py-4 text-sm leading-relaxed shadow-sm ${bubble}`}
       >
+        {message.is_plan_proposal && (
+          <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-ember/40 bg-ember/10 px-2.5 py-0.5 text-xs font-medium text-ember">
+            Proposed plan — reply to confirm or adjust
+          </div>
+        )}
         {/* Fade thoughts out once final answer arrives instead of abruptly removing */}
         {!isUser && message.thoughts && message.thoughts.length > 0 && (
           <div
@@ -141,7 +158,7 @@ export function ChatMessage({ message, isLatestAssistant = false }: { message: C
             />
           </div>
         )}
-        
+
         {/* Render final message content. fade-in softens the handoff so the
             answer doesn't just pop in exactly as the thinking process collapses.
             Only assistant/system output is markdown-rendered — user input is
@@ -159,7 +176,9 @@ export function ChatMessage({ message, isLatestAssistant = false }: { message: C
           )
         ) : (
           // If content is empty but it has thoughts, it's currently actively generating its thoughts step
-          !isUser && <span className="inline-flex h-2 w-2 rounded-full bg-slate/40 animate-bounce" />
+          !isUser && (
+            <span className="inline-flex h-2 w-2 rounded-full bg-slate/40 animate-bounce" />
+          )
         )}
       </div>
     </div>
@@ -179,9 +198,14 @@ export function ChatMessageList({ messages }: { messages: ChatMessageType[] }) {
     <div className="flex flex-col gap-6">
       {messages.map((msg, i) => {
         // Pass whether this is the absolute last message in the list to trigger active pulsing animations
-        const isLatestAssistant = i === messages.length - 1 && msg.role === "assistant";
+        const isLatestAssistant =
+          i === messages.length - 1 && msg.role === "assistant";
         return (
-          <ChatMessage key={i} message={msg} isLatestAssistant={isLatestAssistant} />
+          <ChatMessage
+            key={i}
+            message={msg}
+            isLatestAssistant={isLatestAssistant}
+          />
         );
       })}
     </div>

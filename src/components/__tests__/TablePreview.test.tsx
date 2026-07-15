@@ -40,7 +40,7 @@ describe("TablePreview – rendering", () => {
     expect(container.querySelector("div.uppercase")).not.toBeInTheDocument();
   });
 
-  it("shows 'Empty table' header when rows array is empty", () => {
+  it("shows 'Empty table' header when rows array is empty and no columnDescriptions given", () => {
     render(<TablePreview rows={[]} />);
     expect(screen.getByText("Empty table")).toBeInTheDocument();
   });
@@ -48,6 +48,29 @@ describe("TablePreview – rendering", () => {
   it("shows 'No rows yet.' when rows array is empty", () => {
     render(<TablePreview rows={[]} />);
     expect(screen.getByText("No rows yet.")).toBeInTheDocument();
+  });
+
+  it("shows column headers from columnDescriptions when rows array is empty (schema-only table)", () => {
+    render(
+      <TablePreview
+        rows={[]}
+        columnDescriptions={{ country: "Country name", rank: "Barrington rank" }}
+      />,
+    );
+    expect(screen.getByText("country")).toBeInTheDocument();
+    expect(screen.getByText("rank")).toBeInTheDocument();
+    expect(screen.queryByText("Empty table")).not.toBeInTheDocument();
+    expect(screen.getByText("No rows yet.")).toBeInTheDocument();
+  });
+
+  it("'No rows yet.' spans all inferred schema-only columns", () => {
+    render(
+      <TablePreview rows={[]} columnDescriptions={{ a: "", b: "", c: "" }} />,
+    );
+    expect(screen.getByText("No rows yet.").closest("td")).toHaveAttribute(
+      "colSpan",
+      "3",
+    );
   });
 
   it("stringifies null values as empty string", () => {
