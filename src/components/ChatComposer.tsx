@@ -1,5 +1,5 @@
 // src/components/ChatComposer.tsx
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type ChatComposerProps = {
   isSending: boolean;
@@ -9,6 +9,9 @@ type ChatComposerProps = {
   onTogglePlanMode?: () => void;
 };
 
+const TEXTAREA_MIN_HEIGHT = 40;
+const TEXTAREA_MAX_HEIGHT = 200;
+
 export function ChatComposer({
   isSending,
   onSend,
@@ -17,6 +20,16 @@ export function ChatComposer({
   onTogglePlanMode,
 }: ChatComposerProps) {
   const [value, setValue] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-grow the textarea to fit its content, up to a capped height beyond
+  // which it scrolls internally instead of pushing the rest of the layout.
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(Math.max(el.scrollHeight, TEXTAREA_MIN_HEIGHT), TEXTAREA_MAX_HEIGHT)}px`;
+  }, [value]);
 
   const handleSend = () => {
     const trimmed = value.trim();
@@ -30,7 +43,8 @@ export function ChatComposer({
       <div className="flex flex-col gap-3">
         <div className="relative">
           <textarea
-            className="min-h-[40px] w-full resize-none rounded-xl border border-sand-strong/70 bg-card px-4 py-2 pr-12 text-sm text-ink shadow-sm outline-none transition focus:border-ember/50 focus:ring-2 focus:ring-ember/20 overflow-x-hidden"
+            ref={textareaRef}
+            className="max-h-[200px] min-h-[40px] w-full resize-none rounded-xl border border-sand-strong/70 bg-card px-4 py-2 pr-12 text-sm text-ink shadow-sm outline-none transition focus:border-ember/50 focus:ring-2 focus:ring-ember/20 overflow-x-hidden"
             placeholder="Ask Pneuma-Seeker..."
             rows={1}
             value={value}
@@ -44,7 +58,7 @@ export function ChatComposer({
           />
           <button
             type="button"
-            className="cursor-pointer absolute top-1/2 right-1.5 -translate-y-1/2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-ember text-white shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+            className="cursor-pointer absolute bottom-2 right-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-ember text-white shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
             onClick={handleSend}
             disabled={isSending || !value.trim()}
             aria-label={isSending ? "Thinking" : "Send"}
