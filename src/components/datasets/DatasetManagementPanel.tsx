@@ -4,8 +4,8 @@
 import { useEffect, useState } from "react";
 import { getAccessibleDatasets, uploadMemoryMetadataCsv } from "@/lib/api";
 import { HelpTooltip } from "@/components/HelpTooltip";
-import { EntryListPanel } from "@/components/memory/EntryListPanel";
 import { DatasetTableBrowser } from "@/components/datasets/DatasetTableBrowser";
+import { MetadataEditor } from "@/components/datasets/MetadataEditor";
 import type { User } from "@/lib/types";
 
 type ViewTab = "data" | "metadata";
@@ -16,7 +16,13 @@ const METADATA_SUBTAB_LABELS: Record<MetadataSubTab, string> = {
   column_metadata: "Columns",
 };
 
-function DatasetMetadataView({ dataset, isAdmin }: { dataset: string; isAdmin: boolean }) {
+function DatasetMetadataView({
+  dataset,
+  isAdmin,
+}: {
+  dataset: string;
+  isAdmin: boolean;
+}) {
   const [subTab, setSubTab] = useState<MetadataSubTab>("table_metadata");
   const [uploading, setUploading] = useState(false);
   const [uploadMsg, setUploadMsg] = useState<string | null>(null);
@@ -46,7 +52,9 @@ function DatasetMetadataView({ dataset, isAdmin }: { dataset: string; isAdmin: b
             key={t}
             onClick={() => setSubTab(t)}
             className={`cursor-pointer rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
-              subTab === t ? "bg-white dark:bg-card text-ink shadow-sm" : "text-slate/60 hover:text-ink"
+              subTab === t
+                ? "bg-white dark:bg-card text-ink shadow-sm"
+                : "text-slate/60 hover:text-ink"
             }`}
           >
             {METADATA_SUBTAB_LABELS[t]}
@@ -57,7 +65,11 @@ function DatasetMetadataView({ dataset, isAdmin }: { dataset: string; isAdmin: b
       {isAdmin && (
         <div className="rounded-xl border border-dashed border-sand-strong/70 px-4 py-4 space-y-2">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate/60">
-            Bulk upload ({subTab === "table_metadata" ? "table_name, description" : "table_name, column_name, description"})
+            Bulk upload (
+            {subTab === "table_metadata"
+              ? "table_name, description"
+              : "table_name, column_name, description"}
+            )
           </p>
           <div className="flex flex-wrap items-center gap-3">
             <input
@@ -71,7 +83,11 @@ function DatasetMetadataView({ dataset, isAdmin }: { dataset: string; isAdmin: b
               }}
               className="text-xs text-slate/70"
             />
-            <a href={`/samples/sample_${subTab}.csv`} download className="text-xs text-ember hover:underline">
+            <a
+              href={`/samples/sample_${subTab}.csv`}
+              download
+              className="text-xs text-ember hover:underline"
+            >
               Download sample CSV
             </a>
           </div>
@@ -81,12 +97,10 @@ function DatasetMetadataView({ dataset, isAdmin }: { dataset: string; isAdmin: b
         </div>
       )}
 
-      <EntryListPanel
+      <MetadataEditor
         key={`${dataset}-${subTab}-${refreshKey}`}
-        memoryType={subTab}
-        datasetName={dataset}
-        canCreate
-        canEdit
+        dataset={dataset}
+        kind={subTab}
       />
     </div>
   );
@@ -111,11 +125,19 @@ export default function DatasetManagementPanel({ user }: { user: User }) {
   }, []);
 
   if (loading) {
-    return <p className="py-8 text-center text-sm text-slate/60">Loading datasets…</p>;
+    return (
+      <p className="py-8 text-center text-sm text-slate/60">
+        Loading datasets…
+      </p>
+    );
   }
 
   if (datasets.length === 0) {
-    return <p className="py-8 text-center text-sm text-slate/60">Your group has no accessible datasets.</p>;
+    return (
+      <p className="py-8 text-center text-sm text-slate/60">
+        Your group has no accessible datasets.
+      </p>
+    );
   }
 
   return (
@@ -157,7 +179,9 @@ export default function DatasetManagementPanel({ user }: { user: User }) {
             <button
               onClick={() => setViewTab("data")}
               className={`cursor-pointer rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
-                viewTab === "data" ? "bg-white dark:bg-card text-ink shadow-sm" : "text-slate/60 hover:text-ink"
+                viewTab === "data"
+                  ? "bg-white dark:bg-card text-ink shadow-sm"
+                  : "text-slate/60 hover:text-ink"
               }`}
             >
               Browse Data
@@ -165,7 +189,9 @@ export default function DatasetManagementPanel({ user }: { user: User }) {
             <button
               onClick={() => setViewTab("metadata")}
               className={`cursor-pointer rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
-                viewTab === "metadata" ? "bg-white dark:bg-card text-ink shadow-sm" : "text-slate/60 hover:text-ink"
+                viewTab === "metadata"
+                  ? "bg-white dark:bg-card text-ink shadow-sm"
+                  : "text-slate/60 hover:text-ink"
               }`}
             >
               Metadata
@@ -176,7 +202,11 @@ export default function DatasetManagementPanel({ user }: { user: User }) {
         {viewTab === "data" ? (
           <DatasetTableBrowser key={selected} datasetName={selected} />
         ) : (
-          <DatasetMetadataView key={selected} dataset={selected} isAdmin={isAdmin} />
+          <DatasetMetadataView
+            key={selected}
+            dataset={selected}
+            isAdmin={isAdmin}
+          />
         )}
       </div>
     </div>

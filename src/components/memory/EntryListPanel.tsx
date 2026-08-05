@@ -2,23 +2,34 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { createMemoryEntry, deleteMemoryEntry, listMemoryEntries, updateMemoryEntry } from "@/lib/api";
+import {
+  createMemoryEntry,
+  deleteMemoryEntry,
+  listMemoryEntries,
+  updateMemoryEntry,
+} from "@/lib/api";
 import type { MemoryEntry, MemoryType } from "@/lib/types";
 
 /* -------------------------------------------------------------------------- */
 /* Inline confirm-delete                                                       */
 /* -------------------------------------------------------------------------- */
 
-function DeleteButton({ onDelete }: { onDelete: () => void }) {
+export function DeleteButton({ onDelete }: { onDelete: () => void }) {
   const [confirm, setConfirm] = useState(false);
   if (confirm) {
     return (
       <span className="flex items-center gap-2">
         <span className="text-xs text-slate/70">Sure?</span>
-        <button className="text-xs font-semibold text-red-600 hover:underline" onClick={onDelete}>
+        <button
+          className="text-xs font-semibold text-red-600 hover:underline"
+          onClick={onDelete}
+        >
           Yes
         </button>
-        <button className="text-xs text-slate/70 hover:underline" onClick={() => setConfirm(false)}>
+        <button
+          className="text-xs text-slate/70 hover:underline"
+          onClick={() => setConfirm(false)}
+        >
           No
         </button>
       </span>
@@ -62,7 +73,10 @@ function EntryRow({
           className="w-full rounded-lg border border-sand-strong/70 bg-white dark:bg-card px-3 py-2 text-sm outline-none focus:border-ember/50 focus:ring-2 focus:ring-ember/20"
         />
         <div className="flex justify-end gap-3">
-          <button className="text-xs text-slate/60 hover:underline" onClick={() => setEditing(false)}>
+          <button
+            className="text-xs text-slate/60 hover:underline"
+            onClick={() => setEditing(false)}
+          >
             Cancel
           </button>
           <button
@@ -88,7 +102,9 @@ function EntryRow({
         <p className="text-sm text-ink whitespace-pre-wrap">{entry.content}</p>
         <p className="mt-1 text-[11px] text-slate/50">
           {entry.source}
-          {entry.created_at ? ` · ${new Date(entry.created_at).toLocaleString()}` : ""}
+          {entry.created_at
+            ? ` · ${new Date(entry.created_at).toLocaleString()}`
+            : ""}
         </p>
       </div>
       <div className="flex shrink-0 items-center gap-3">
@@ -127,7 +143,10 @@ export function EntryListPanel({
     setLoading(true);
     setError(null);
     try {
-      const res = await listMemoryEntries(memoryType, { datasetName, limit: 50 });
+      const res = await listMemoryEntries(memoryType, {
+        datasetName,
+        limit: 50,
+      });
       setEntries(res.items);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load entries.");
@@ -145,7 +164,11 @@ export function EntryListPanel({
     setSubmitting(true);
     setError(null);
     try {
-      await createMemoryEntry({ memory_type: memoryType, content: draft.trim(), dataset_name: datasetName });
+      await createMemoryEntry({
+        memory_type: memoryType,
+        content: draft.trim(),
+        dataset_name: datasetName,
+      });
       setDraft("");
       await load();
     } catch (e) {
@@ -204,14 +227,20 @@ export function EntryListPanel({
       {loading ? (
         <div className="py-8 text-center text-sm text-slate/60">Loading…</div>
       ) : entries.length === 0 ? (
-        <div className="py-8 text-center text-sm text-slate/60">Nothing here yet.</div>
+        <div className="py-8 text-center text-sm text-slate/60">
+          Nothing here yet.
+        </div>
       ) : (
         <div className="space-y-2">
           {entries.map((entry) => (
             <EntryRow
               key={entry.memory_id}
               entry={entry}
-              onSave={canEdit ? (content) => handleSave(entry.memory_id, content) : undefined}
+              onSave={
+                canEdit
+                  ? (content) => handleSave(entry.memory_id, content)
+                  : undefined
+              }
               onDelete={() => handleDelete(entry.memory_id)}
             />
           ))}
