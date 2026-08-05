@@ -4,4 +4,5 @@
 
 export * from "./auth";
 export * from "./chat";
+export * from "./memory";
 export { ApiError } from "./base";

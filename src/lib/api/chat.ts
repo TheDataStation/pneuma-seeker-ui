@@ -8,6 +8,7 @@ import type {
   ChatRequest,
   ChatStateResponse,
   ChatStreamEvent,
+  DatasetTablesResponse,
   ProvenanceNodesResponse,
   TableQueryResponse,
   TableRow,
@@ -102,6 +103,42 @@ export async function getAccessibleDatasets(
   token?: string,
 ): Promise<AccessibleDatasetResponse> {
   return request<AccessibleDatasetResponse>("/chat/datasets", { method: "GET" }, token);
+}
+
+export async function listDatasetTables(
+  datasetName: string,
+  token?: string,
+): Promise<DatasetTablesResponse> {
+  return request<DatasetTablesResponse>(
+    `/chat/dataset_tables/${encodeURIComponent(datasetName)}`,
+    { method: "GET" },
+    token,
+  );
+}
+
+export async function queryDatasetTable(
+  datasetName: string,
+  tableId: string,
+  params: {
+    limit?: number;
+    offset?: number;
+    order_by?: string;
+    order_dir?: string;
+    search?: string;
+  },
+  token?: string,
+): Promise<TableQueryResponse> {
+  const query = new URLSearchParams({ table_id: tableId });
+  if (params.limit !== undefined) query.set("limit", String(params.limit));
+  if (params.offset !== undefined) query.set("offset", String(params.offset));
+  if (params.order_by) query.set("order_by", params.order_by);
+  if (params.order_dir) query.set("order_dir", params.order_dir);
+  if (params.search) query.set("search", params.search);
+  return request<TableQueryResponse>(
+    `/chat/dataset_table_query/${encodeURIComponent(datasetName)}?${query}`,
+    { method: "GET" },
+    token,
+  );
 }
 
 export async function getChatHistory(

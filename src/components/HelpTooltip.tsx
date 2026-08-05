@@ -6,6 +6,7 @@ import { useClickOutside } from "@/lib/useClickOutside";
 interface HelpTooltipProps {
   text: string;
   className?: string;
+  ariaLabel?: string;
 }
 
 /**
@@ -21,7 +22,11 @@ interface HelpTooltipProps {
  * the mouse still) until you click elsewhere, while hover-only opens still
  * close on mouseleave as expected.
  */
-export function HelpTooltip({ text, className = "" }: HelpTooltipProps) {
+export function HelpTooltip({
+  text,
+  className = "",
+  ariaLabel = "What does this step do?",
+}: HelpTooltipProps) {
   const [isHovering, setIsHovering] = useState(false);
   const [isPinned, setIsPinned] = useState(false);
   const isOpen = isHovering || isPinned;
@@ -41,7 +46,7 @@ export function HelpTooltip({ text, className = "" }: HelpTooltipProps) {
     <span ref={wrapperRef} className={`relative inline-flex ${className}`}>
       <button
         type="button"
-        aria-label="What does this step do?"
+        aria-label={ariaLabel}
         aria-describedby={tooltipId}
         aria-expanded={isOpen}
         className="flex h-5 w-5 cursor-help items-center justify-center rounded-full border border-sand-strong/70 bg-card text-[0.65rem] font-bold text-slate/60 transition hover:border-ember/40 hover:text-ember"

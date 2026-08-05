@@ -1,0 +1,4 @@
+table_name,column_name,description
+orders,order_id,"Unique identifier for the order line item."
+orders,total_amount,"Order total in USD, excluding tax."
+customers,customer_id,"Unique identifier for the customer, stable across regions."

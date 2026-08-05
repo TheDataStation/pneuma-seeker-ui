@@ -71,9 +71,18 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
   >({});
   const [activeChatId, setActiveChatId] = useState(initialChatId ?? "");
   const [planMode, setPlanMode] = useState(false);
+  const [useMemory, setUseMemory] = useState(true);
   const [hasLoadedChats, setHasLoadedChats] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const loadedHistoryIds = useRef<Set<string>>(new Set());
+  // Bumped once per handleSend call, per chat. Lets the post-stream sidebar/history
+  // refresh detect whether a newer send has since started for the same chat — if so,
+  // this (now-stale) turn's refresh is discarded instead of overwriting fresher state.
+  // Needed because isStreaming is released as soon as this turn's stream closes, so a
+  // user can start the next send before this turn's own refresh has resolved; without
+  // this guard, whichever refresh happens to resolve last wins, regardless of which
+  // turn it belongs to.
+  const sendGenerationRef = useRef<Record<string, number>>({});
   const [isChatListOpen, setIsChatListOpen] = useState(() => {
     if (typeof window == "undefined") {
       return true;
@@ -298,12 +307,19 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
   }, [activeChatId, hasLoadedChats, handleUnauthorized, updateChatState]);
 
   const refreshSidebar = useCallback(
-    async (chatId: string, force: boolean = false) => {
+    async (chatId: string, force: boolean = false, expectedGeneration?: number) => {
       if (!chatId) return;
       if (!force) {
         const isLocalOnly = !chatSessions.some((s) => s.id === chatId);
         if (isLocalOnly) return;
       }
+
+      // If a newer send has already started for this chat by the time this
+      // resolves, this refresh belongs to a turn that's no longer the latest —
+      // applying it would clobber fresher state with stale state.
+      const isStale = () =>
+        expectedGeneration !== undefined &&
+        sendGenerationRef.current[chatId] !== expectedGeneration;
 
       updateChatState(chatId, (prev) => ({
         ...prev,
@@ -311,6 +327,7 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
       }));
       try {
         const fresh = await getChatState(chatId);
+        if (isStale()) return;
         updateChatState(chatId, (prev) => ({
           ...prev,
           sidebar: fresh,
@@ -318,6 +335,7 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
         }));
       } catch (error) {
         if (handleUnauthorized(error)) return;
+        if (isStale()) return;
         updateChatState(chatId, (prev) => ({
           ...prev,
           sidebarStatus: "Offline",
@@ -392,6 +410,8 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
   const handleSend = async (content: string) => {
     const isNew = !activeChatId;
     const chatId = isNew ? generateUUID() : activeChatId;
+    const mySendGeneration = (sendGenerationRef.current[chatId] ?? 0) + 1;
+    sendGenerationRef.current[chatId] = mySendGeneration;
 
     if (isNew) {
       loadedHistoryIds.current.add(chatId);
@@ -439,6 +459,7 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
         message: content,
         dataset_name: selectedDataset,
         plan_mode: sentAsPlanMode,
+        use_memory: useMemory,
       })) {
         if (event.sender === "log") {
           const cleanLog = event.text.replace(/^LOG\s*:\s*/i, ""); // Strip "LOG:" safely
@@ -508,12 +529,15 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
       }));
     } finally {
       updateChatState(chatId, (prev) => ({ ...prev, isStreaming: false }));
-      refreshSidebar(chatId, true);
+      refreshSidebar(chatId, true, mySendGeneration);
       // Sync with backend's persisted state after stream ends (success or error).
       // The backend always persists in its finally block before the stream closes,
-      // so this read reflects the authoritative saved result.
+      // so this read reflects the authoritative saved result — but isStreaming is
+      // already released above, so a newer send for this chat may start before this
+      // resolves; discard the result if so (see sendGenerationRef).
       getChatHistory(chatId)
         .then((data) => {
+          if (sendGenerationRef.current[chatId] !== mySendGeneration) return;
           if (data.messages && data.messages.length > 0) {
             updateChatState(chatId, (current) => ({
               ...current,
@@ -724,6 +748,8 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
                 chatKey={activeChatId}
                 planMode={planMode}
                 onTogglePlanMode={() => setPlanMode((prev) => !prev)}
+                useMemory={useMemory}
+                onToggleUseMemory={() => setUseMemory((prev) => !prev)}
               />
 
               {showInspector && (

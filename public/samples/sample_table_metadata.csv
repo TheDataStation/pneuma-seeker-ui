@@ -1,0 +1,3 @@
+table_name,description
+orders,"Order transactions placed by customers, one row per order line item."
+customers,"Customer master records, one row per unique customer."

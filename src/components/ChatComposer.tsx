@@ -7,6 +7,8 @@ type ChatComposerProps = {
   className?: string;
   planMode?: boolean;
   onTogglePlanMode?: () => void;
+  useMemory?: boolean;
+  onToggleUseMemory?: () => void;
 };
 
 const TEXTAREA_MIN_HEIGHT = 40;
@@ -18,6 +20,8 @@ export function ChatComposer({
   className,
   planMode = false,
   onTogglePlanMode,
+  useMemory = true,
+  onToggleUseMemory,
 }: ChatComposerProps) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -79,38 +83,72 @@ export function ChatComposer({
             </svg>
           </button>
         </div>
-        {onTogglePlanMode && (
-          <div className="flex items-center">
-            <button
-              type="button"
-              aria-pressed={planMode}
-              onClick={onTogglePlanMode}
-              className={`cursor-pointer inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition ${
-                planMode
-                  ? "border-ember/60 bg-ember/10 text-ember"
-                  : "border-sand-strong/70 text-slate/70 hover:border-sand-strong hover:text-slate"
-              }`}
-              title={
-                planMode
-                  ? "Plan mode on: the next message will get a proposal instead of a computed answer"
-                  : "Plan mode: propose a plan for confirmation before computing an answer"
-              }
-            >
-              <svg
-                viewBox="0 0 20 20"
-                className="h-3.5 w-3.5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
+        {(onTogglePlanMode || onToggleUseMemory) && (
+          <div className="flex items-center gap-2">
+            {onTogglePlanMode && (
+              <button
+                type="button"
+                aria-pressed={planMode}
+                onClick={onTogglePlanMode}
+                className={`cursor-pointer inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition ${
+                  planMode
+                    ? "border-ember/60 bg-ember/10 text-ember"
+                    : "border-sand-strong/70 text-slate/70 hover:border-sand-strong hover:text-slate"
+                }`}
+                title={
+                  planMode
+                    ? "Plan mode on: the next message will get a proposal instead of a computed answer"
+                    : "Plan mode: propose a plan for confirmation before computing an answer"
+                }
               >
-                <path d="M4 4h12v3H4z" />
-                <path d="M4 10h8M4 13h5" />
-              </svg>
-              Plan mode
-            </button>
+                <svg
+                  viewBox="0 0 20 20"
+                  className="h-3.5 w-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M4 4h12v3H4z" />
+                  <path d="M4 10h8M4 13h5" />
+                </svg>
+                Plan mode
+              </button>
+            )}
+            {onToggleUseMemory && (
+              <button
+                type="button"
+                aria-pressed={useMemory}
+                onClick={onToggleUseMemory}
+                className={`cursor-pointer inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition ${
+                  useMemory
+                    ? "border-ember/60 bg-ember/10 text-ember"
+                    : "border-sand-strong/70 text-slate/70 hover:border-sand-strong hover:text-slate"
+                }`}
+                title={
+                  useMemory
+                    ? "Memory on: relevant tribal knowledge and preferences will be used, and this turn may contribute new ones"
+                    : "Memory off: this turn won't use or contribute tribal knowledge/preferences"
+                }
+              >
+                <svg
+                  viewBox="0 0 20 20"
+                  className="h-3.5 w-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M10 3a4 4 0 0 0-4 4v6a4 4 0 0 0 8 0V7a4 4 0 0 0-4-4Z" />
+                  <path d="M6 9h8M6 12h8" />
+                </svg>
+                Memory
+              </button>
+            )}
           </div>
         )}
       </div>

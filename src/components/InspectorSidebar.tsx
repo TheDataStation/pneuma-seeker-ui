@@ -17,6 +17,8 @@ const STEP_HINTS: Record<string, string> = {
     "Builds views — derived tables — from the underlying data sources: joining, filtering, and shaping them into the exact structure needed to answer your question.",
   executeScript:
     "Runs the generated analysis script against the materialized views to produce your final answer.",
+  memoryUsed:
+    "Tribal knowledge and personal preferences contributed by users in past conversations that Pneuma factored into this turn's answer. Manage these on the Memory page.",
 };
 
 interface InspectorSidebarProps {
@@ -42,7 +44,8 @@ export function hasSidebarContent(sidebar: ChatStateResponse | null): boolean {
   const hasViewsAndScript =
     (sidebar.state?.T && Object.keys(sidebar.state.T).length > 0) ||
     !!sidebar.state?.S;
-  return hasRetrievedTables || hasPrepareData || hasViewsAndScript;
+  const hasMemoryUsed = (sidebar.used_memory_entries ?? []).length > 0;
+  return hasRetrievedTables || hasPrepareData || hasViewsAndScript || hasMemoryUsed;
 }
 
 // ── Step 2: Materialize Views ─────────────────────────────────────────────────
@@ -340,6 +343,7 @@ export function InspectorSidebar({
     retrieveTables: false,
     materializeViews: false,
     executeScript: false,
+    memoryUsed: false,
   });
 
   const [explorerTable, setExplorerTable] = useState<{
@@ -360,6 +364,8 @@ export function InspectorSidebar({
     (sidebar?.state?.T && Object.keys(sidebar.state.T).length > 0) ||
     provSteps.length > 0;
   const hasExecuteScript = !!sidebar?.state?.S;
+  const memoryEntries = sidebar?.used_memory_entries ?? [];
+  const hasMemoryUsed = memoryEntries.length > 0;
 
   type StepDef = { key: string; label: string; render: () => React.ReactNode };
   const steps: StepDef[] = [];
@@ -456,6 +462,28 @@ export function InspectorSidebar({
             })
           }
         />
+      ),
+    });
+  }
+
+  if (hasMemoryUsed) {
+    steps.push({
+      key: "memoryUsed",
+      label: "Memory Used",
+      render: () => (
+        <div className="space-y-2">
+          {memoryEntries.map((entry) => (
+            <div
+              key={entry.memory_id}
+              className="rounded-xl border border-sand-strong/50 bg-sand/40 dark:bg-white/[0.03] px-4 py-3"
+            >
+              <p className="text-sm text-ink whitespace-pre-wrap">{entry.content}</p>
+              <p className="mt-1 text-[11px] text-slate/50">
+                {entry.memory_type === "tribal_knowledge" ? "Tribal knowledge" : "Your preference"}
+              </p>
+            </div>
+          ))}
+        </div>
       ),
     });
   }

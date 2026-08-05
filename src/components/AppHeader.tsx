@@ -197,6 +197,20 @@ export default function AppHeader({
               >
                 Profile settings
               </Link>
+              <Link
+                href="/memory"
+                className="block w-full text-left px-4 py-3 text-xs font-semibold uppercase tracking-[0.22em] text-slate hover:bg-sand/60 dark:hover:bg-white/5 transition-colors"
+                onClick={() => setIsUserMenuOpen(false)}
+              >
+                Memory
+              </Link>
+              <Link
+                href="/datasets"
+                className="block w-full text-left px-4 py-3 text-xs font-semibold uppercase tracking-[0.22em] text-slate hover:bg-sand/60 dark:hover:bg-white/5 transition-colors"
+                onClick={() => setIsUserMenuOpen(false)}
+              >
+                Dataset Management
+              </Link>
               {user.group_name === "admin" && (
                 <Link
                   href="/admin"

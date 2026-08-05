@@ -121,11 +121,18 @@ export interface ConductorState {
   [key: string]: unknown;
 }
 
+export interface UsedMemoryEntry {
+  memory_id: string;
+  memory_type: string;
+  content: string;
+}
+
 export interface ChatStateResponse {
   state: ConductorState;
   prov_steps: string[];
   retrieved_tables: Record<string, TableRow[]>;
   dataset_name?: string | null;
+  used_memory_entries?: UsedMemoryEntry[];
 }
 
 export interface ChatStreamEvent {
@@ -141,10 +148,15 @@ export interface ChatRequest {
   files?: unknown[];
   dataset_name?: string | null;
   plan_mode?: boolean;
+  use_memory?: boolean;
 }
 
 export interface AccessibleDatasetResponse {
   datasets: string[];
+}
+
+export interface DatasetTablesResponse {
+  tables: string[];
 }
 
 export interface ChatHistoryResponse {
@@ -174,4 +186,48 @@ export interface ProvenanceNodesResponse {
   chat_id: string;
   node_count: number;
   nodes: ProvenanceNode[];
+}
+
+/* -------------------------------------------------------------------------- */
+/* Memory layer                                                                */
+/* -------------------------------------------------------------------------- */
+
+export type MemoryType =
+  | "tribal_knowledge"
+  | "user_preference"
+  | "agent_learning"
+  | "table_metadata"
+  | "column_metadata";
+
+export interface MemoryEntry {
+  memory_id: string;
+  memory_type: MemoryType;
+  content: string;
+  source: string;
+  group_id?: string | null;
+  user_id?: string | null;
+  dataset_name?: string | null;
+  key_text?: string | null;
+  source_user_id?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface MemoryEntryListResponse {
+  items: MemoryEntry[];
+  has_more: boolean;
+  next_offset: number | null;
+}
+
+export interface CreateMemoryEntryRequest {
+  memory_type: MemoryType;
+  content: string;
+  dataset_name?: string | null;
+  key_text?: string | null;
+}
+
+export interface MemoryMetadataUploadResponse {
+  dataset_name: string;
+  memory_type: MemoryType;
+  rows_stored: number;
 }
