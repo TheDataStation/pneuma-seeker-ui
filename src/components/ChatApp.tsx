@@ -672,7 +672,7 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
       activeChat.sidebarStatus === "Refreshing...");
 
   return (
-    <div className="flex h-screen flex-1 flex-col overflow-hidden">
+    <div className="flex h-screen flex-col overflow-hidden">
       <div className="app-shell flex flex-1 min-h-0 flex-col overflow-hidden border border-white/70 p-3 lg:p-4 fade-in">
         <div
           className={`flex min-h-0 flex-1 ${isChatListOpen ? "gap-6" : "gap-0"}`}
@@ -736,7 +736,7 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
             />
 
             <div
-              className={`mt-8 grid min-h-0 flex-1 gap-6 ${
+              className={`mt-8 grid min-h-0 flex-1 auto-rows-[minmax(0,1fr)] gap-6 ${
                 showInspector ? "lg:grid-cols-[minmax(0,1fr)_420px]" : ""
               }`}
             >
