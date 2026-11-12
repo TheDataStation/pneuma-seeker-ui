@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { getAccessibleDatasets, uploadMemoryMetadataCsv } from "@/lib/api";
 import { HelpTooltip } from "@/components/HelpTooltip";
+import { DatasetDescription } from "@/components/datasets/DatasetDescription";
 import { DatasetTableBrowser } from "@/components/datasets/DatasetTableBrowser";
 import { MetadataEditor } from "@/components/datasets/MetadataEditor";
 import type { User } from "@/lib/types";
@@ -198,6 +199,8 @@ export default function DatasetManagementPanel({ user }: { user: User }) {
             </button>
           </div>
         </div>
+
+        <DatasetDescription key={selected} dataset={selected} />
 
         {viewTab === "data" ? (
           <DatasetTableBrowser key={selected} datasetName={selected} />

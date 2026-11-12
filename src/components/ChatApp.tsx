@@ -115,11 +115,17 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
     ? (chatStateById[activeChatId] ?? emptyRuntime)
     : emptyRuntime;
 
-  // A multi-dataset chat is persisted without a dataset ("").
+  // A multi-dataset chat is persisted without a dataset (""). A chat with no
+  // dataset and no messages yet (never persisted), or one reopened after the
+  // backend turned multi mode off, falls back to the picker's choice instead.
+  const isMultiDatasetChat =
+    activeChat.dataset === "" &&
+    multiDatasetEnabled &&
+    activeChat.messages.length > 0;
   const selectedDataset = activeChatId
-    ? activeChat.dataset === ""
+    ? isMultiDatasetChat
       ? MULTI_DATASET
-      : (activeChat.dataset ?? manualDataset)
+      : activeChat.dataset || manualDataset
     : manualDataset;
 
   const updateChatState = useCallback(

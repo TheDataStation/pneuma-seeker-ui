@@ -222,6 +222,56 @@ describe("ChatApp – chat list", () => {
   });
 });
 
+describe("ChatApp – reopening a chat saved without a dataset", () => {
+  async function openSavedChat(multiEnabled: boolean, messages: unknown[]) {
+    // Selecting a chat checks the viewport width; jsdom has no matchMedia.
+    window.matchMedia = jest
+      .fn()
+      .mockReturnValue({ matches: false }) as unknown as typeof window.matchMedia;
+    localStorage.setItem("token", "tok");
+    mockGetCurrentUser.mockResolvedValue(mockUser);
+    mockGetAccessibleDatasets.mockResolvedValue({
+      datasets: ["db1", "db2"],
+      multi_dataset_enabled: multiEnabled,
+    });
+    mockGetAllChats.mockResolvedValue({
+      chats: [{ id: "c1", title: "Saved chat", lastActive: new Date().toISOString() }],
+      has_more: false,
+      next_offset: null,
+    });
+    mockGetChatState.mockRejectedValue(new Error("no chat"));
+    mockGetChatHistory.mockResolvedValue({
+      user_id: "u1",
+      chat_id: "c1",
+      messages,
+      dataset_name: "",
+    });
+    const user = userEvent.setup();
+    render(<ChatApp />);
+    await user.click(await screen.findByText("Saved chat"));
+    await waitFor(() => expect(mockGetChatHistory).toHaveBeenCalledWith("c1"));
+  }
+
+  const messages = [
+    { role: "user", content: "q" },
+    { role: "assistant", content: "a" },
+  ];
+
+  it("shows it as 'Multiple datasets' when multi mode is enabled", async () => {
+    await openSavedChat(true, messages);
+    await waitFor(() => {
+      expect(screen.getByRole("combobox")).toHaveValue(MULTI_DATASET);
+    });
+  });
+
+  it("falls back to a real dataset when multi mode is disabled", async () => {
+    await openSavedChat(false, messages);
+    await waitFor(() => {
+      expect(screen.getByRole("combobox")).toHaveValue("db1");
+    });
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Mobile sidebar backdrop stacking
 // ---------------------------------------------------------------------------

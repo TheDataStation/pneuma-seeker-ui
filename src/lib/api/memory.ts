@@ -3,6 +3,7 @@ import { CONFIG } from "../config";
 import { ApiError, getStoredToken, request } from "./base";
 import type {
   CreateMemoryEntryRequest,
+  DatasetDescription,
   MemoryEntry,
   MemoryEntryListResponse,
   MemoryMetadataUploadResponse,
@@ -49,6 +50,30 @@ export async function deleteMemoryEntry(
   token?: string,
 ): Promise<{ detail: string }> {
   return request<{ detail: string }>(`/memory/entries/${memoryId}`, { method: "DELETE" }, token);
+}
+
+export async function getDatasetDescription(
+  datasetName: string,
+  token?: string,
+): Promise<DatasetDescription> {
+  return request<DatasetDescription>(
+    `/memory/dataset_description/${encodeURIComponent(datasetName)}`,
+    { method: "GET" },
+    token,
+  );
+}
+
+/** Sets a dataset's description; an empty string removes it. */
+export async function updateDatasetDescription(
+  datasetName: string,
+  description: string,
+  token?: string,
+): Promise<DatasetDescription> {
+  return request<DatasetDescription>(
+    `/memory/dataset_description/${encodeURIComponent(datasetName)}`,
+    { method: "PUT", body: JSON.stringify({ description }) },
+    token,
+  );
 }
 
 export async function uploadMemoryMetadataCsv(

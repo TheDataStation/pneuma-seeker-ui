@@ -204,8 +204,16 @@ export type MemoryType =
   | "tribal_knowledge"
   | "user_preference"
   | "agent_learning"
+  | "dataset_metadata"
   | "table_metadata"
   | "column_metadata";
+
+/** What a dataset is about; one per dataset. Agents read it when listing datasets. */
+export interface DatasetDescription {
+  dataset_name: string;
+  description: string; // "" if nobody wrote one
+  updated_at?: string | null;
+}
 
 export interface MemoryEntry {
   memory_id: string;
