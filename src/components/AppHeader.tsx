@@ -204,11 +204,11 @@ export default function AppHeader({
                 Profile settings
               </Link>
               <Link
-                href="/memory"
+                href="/tribal-knowledge"
                 className="block w-full text-left px-4 py-3 text-xs font-semibold uppercase tracking-[0.22em] text-slate hover:bg-sand/60 dark:hover:bg-white/5 transition-colors"
                 onClick={() => setIsUserMenuOpen(false)}
               >
-                Memory
+                Tribal Knowledge
               </Link>
               <Link
                 href="/datasets"

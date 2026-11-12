@@ -72,7 +72,6 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
   >({});
   const [activeChatId, setActiveChatId] = useState(initialChatId ?? "");
   const [planMode, setPlanMode] = useState(false);
-  const [useMemory, setUseMemory] = useState(true);
   const [hasLoadedChats, setHasLoadedChats] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const loadedHistoryIds = useRef<Set<string>>(new Set());
@@ -480,7 +479,6 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
           ? { multi_dataset: true }
           : { dataset_name: selectedDataset }),
         plan_mode: sentAsPlanMode,
-        use_memory: useMemory,
       })) {
         if (event.sender === "log") {
           const cleanLog = event.text.replace(/^LOG\s*:\s*/i, ""); // Strip "LOG:" safely
@@ -770,8 +768,6 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
                 chatKey={activeChatId}
                 planMode={planMode}
                 onTogglePlanMode={() => setPlanMode((prev) => !prev)}
-                useMemory={useMemory}
-                onToggleUseMemory={() => setUseMemory((prev) => !prev)}
               />
 
               {showInspector && (

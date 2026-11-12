@@ -5,9 +5,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/api";
 import type { User } from "@/lib/types";
-import MemoryPanel from "@/components/memory/MemoryPanel";
+import { HelpTooltip } from "@/components/HelpTooltip";
+import TribalKnowledgePanel, {
+  TRIBAL_KNOWLEDGE_HINT,
+} from "@/components/memory/TribalKnowledgePanel";
 
-export default function MemoryPage() {
+export default function TribalKnowledgePage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [status, setStatus] = useState<"loading" | "ready">("loading");
@@ -20,7 +23,7 @@ export default function MemoryPage() {
         setStatus("ready");
       })
       .catch(() => {
-        push("/login?next=/memory");
+        push("/login?next=/tribal-knowledge");
       });
   }, [push]);
 
@@ -44,13 +47,16 @@ export default function MemoryPage() {
           </svg>
           Back to app
         </Link>
-        <h1 className="font-display text-3xl text-ink">Memory</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="font-display text-3xl text-ink">Tribal Knowledge</h1>
+          <HelpTooltip text={TRIBAL_KNOWLEDGE_HINT} ariaLabel="What is Tribal Knowledge?" />
+        </div>
         <p className="mt-1 text-sm text-slate/60">
-          Knowledge and preferences Pneuma remembers across conversations.
+          What your team knows about the data that the data itself can&apos;t tell you.
         </p>
       </div>
 
-      <MemoryPanel />
+      <TribalKnowledgePanel />
     </div>
   );
 }

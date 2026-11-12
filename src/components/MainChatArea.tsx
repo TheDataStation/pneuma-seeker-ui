@@ -13,8 +13,6 @@ interface MainChatAreaProps {
   chatKey: string;
   planMode?: boolean;
   onTogglePlanMode?: () => void;
-  useMemory?: boolean;
-  onToggleUseMemory?: () => void;
 }
 
 function HistoryLoadingSkeleton() {
@@ -43,8 +41,6 @@ export function MainChatArea({
   chatKey,
   planMode,
   onTogglePlanMode,
-  useMemory,
-  onToggleUseMemory,
 }: MainChatAreaProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -121,8 +117,6 @@ export function MainChatArea({
         onSend={onSend}
         planMode={planMode}
         onTogglePlanMode={onTogglePlanMode}
-        useMemory={useMemory}
-        onToggleUseMemory={onToggleUseMemory}
       />
     </main>
   );

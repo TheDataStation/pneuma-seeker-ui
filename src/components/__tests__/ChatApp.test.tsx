@@ -355,6 +355,7 @@ describe("ChatApp – plan mode", () => {
       );
     });
     expect(mockStreamChat.mock.calls[0][0]).not.toHaveProperty("dataset_name");
+    expect(mockStreamChat.mock.calls[0][0]).not.toHaveProperty("use_memory");
   });
 
   it("restores the user's last dataset choice instead of the default", async () => {

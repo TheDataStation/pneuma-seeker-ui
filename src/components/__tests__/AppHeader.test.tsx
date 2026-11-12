@@ -210,6 +210,17 @@ describe("AppHeader – new chat button", () => {
 // User menu toggle
 // ---------------------------------------------------------------------------
 
+describe("AppHeader – user menu links", () => {
+  it("links to Tribal Knowledge (no longer called Memory)", () => {
+    render(<AppHeader {...defaultProps} isUserMenuOpen={true} />);
+    expect(screen.getByRole("link", { name: "Tribal Knowledge" })).toHaveAttribute(
+      "href",
+      "/tribal-knowledge",
+    );
+    expect(screen.queryByRole("link", { name: /^memory$/i })).not.toBeInTheDocument();
+  });
+});
+
 describe("AppHeader – user menu toggle", () => {
   it("calls setIsUserMenuOpen(true) when menu button is clicked while closed", async () => {
     const setIsUserMenuOpen = jest.fn();

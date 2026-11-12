@@ -24,6 +24,12 @@ describe("ChatComposer – rendering", () => {
     expect(screen.getByRole("button", { name: /send/i })).toBeInTheDocument();
   });
 
+  it("has no Memory toggle (tribal knowledge is always used when enabled)", () => {
+    render(<ChatComposer {...defaultProps} onTogglePlanMode={jest.fn()} />);
+    expect(screen.getByRole("button", { name: /plan mode/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /memory/i })).not.toBeInTheDocument();
+  });
+
   it("send button is disabled when textarea is empty", () => {
     render(<ChatComposer {...defaultProps} />);
     expect(screen.getByRole("button", { name: /send/i })).toBeDisabled();

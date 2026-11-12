@@ -150,7 +150,6 @@ export interface ChatRequest {
   files?: unknown[];
   dataset_name?: string | null;
   plan_mode?: boolean;
-  use_memory?: boolean;
   /** Retrieve tables from any accessible dataset (needs ENABLE_MULTI_DATASET on the backend). */
   multi_dataset?: boolean;
 }
@@ -202,8 +201,6 @@ export interface ProvenanceNodesResponse {
 
 export type MemoryType =
   | "tribal_knowledge"
-  | "user_preference"
-  | "agent_learning"
   | "dataset_metadata"
   | "table_metadata"
   | "column_metadata";

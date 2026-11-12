@@ -18,7 +18,7 @@ const STEP_HINTS: Record<string, string> = {
   executeScript:
     "Runs the generated analysis script against the materialized views to produce your final answer.",
   memoryUsed:
-    "Tribal knowledge and personal preferences contributed by users in past conversations that Pneuma factored into this turn's answer. Manage these on the Memory page.",
+    "Tribal knowledge from your team that Pneuma factored into this turn's answer. Manage it on the Tribal Knowledge page.",
 };
 
 interface InspectorSidebarProps {
@@ -474,7 +474,7 @@ export function InspectorSidebar({
   if (hasMemoryUsed) {
     steps.push({
       key: "memoryUsed",
-      label: "Memory Used",
+      label: "Tribal Knowledge Used",
       render: () => (
         <div className="space-y-2">
           {memoryEntries.map((entry) => (
@@ -483,9 +483,6 @@ export function InspectorSidebar({
               className="rounded-xl border border-sand-strong/50 bg-sand/40 dark:bg-white/[0.03] px-4 py-3"
             >
               <p className="text-sm text-ink whitespace-pre-wrap">{entry.content}</p>
-              <p className="mt-1 text-[11px] text-slate/50">
-                {entry.memory_type === "tribal_knowledge" ? "Tribal knowledge" : "Your preference"}
-              </p>
             </div>
           ))}
         </div>

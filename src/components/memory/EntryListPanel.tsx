@@ -46,8 +46,7 @@ export function DeleteButton({ onDelete }: { onDelete: () => void }) {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Generic entry list (tribal knowledge / preferences / agent learning /       */
-/* table & column metadata)                                                    */
+/* Generic entry list (tribal knowledge / table & column metadata)            */
 /* -------------------------------------------------------------------------- */
 
 function EntryRow({
