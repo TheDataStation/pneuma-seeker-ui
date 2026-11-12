@@ -383,7 +383,12 @@ export function InspectorSidebar({
               setExplorerTable({
                 tableId: retrievedTableNames[tableIndex],
                 tableName: retrievedTableNames[tableIndex],
-                datasetName: sidebar?.dataset_name ?? undefined,
+                datasetName:
+                  sidebar?.retrieved_table_datasets?.[
+                    retrievedTableNames[tableIndex]
+                  ] ??
+                  sidebar?.dataset_name ??
+                  undefined,
               })
             }
           />

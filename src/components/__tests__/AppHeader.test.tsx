@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import AppHeader from "@/components/AppHeader";
-import type { User } from "@/lib/types";
+import { MULTI_DATASET, type User } from "@/lib/types";
 
 const mockUser: User = {
   user_id: "user-1",
@@ -154,6 +154,36 @@ describe("AppHeader – dataset selector", () => {
     );
     const combobox = screen.getByRole("combobox");
     expect(combobox.querySelectorAll("option").length).toBe(0);
+  });
+
+  it("hides 'Multiple datasets' unless the backend enables it", () => {
+    render(<AppHeader {...defaultProps} accessibleDatasets={["ds1", "ds2"]} />);
+    expect(
+      screen.queryByRole("option", { name: /multiple datasets/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("offers 'Multiple datasets' when enabled and there are several datasets", async () => {
+    const handleDatasetChange = jest.fn();
+    const user = userEvent.setup();
+    render(
+      <AppHeader
+        {...defaultProps}
+        selectedDataset="ds1"
+        accessibleDatasets={["ds1", "ds2"]}
+        multiDatasetEnabled
+        handleDatasetChange={handleDatasetChange}
+      />,
+    );
+    await user.selectOptions(screen.getByRole("combobox"), "Multiple datasets");
+    expect(handleDatasetChange).toHaveBeenCalledWith(MULTI_DATASET);
+  });
+
+  it("hides 'Multiple datasets' when only one dataset is accessible", () => {
+    render(<AppHeader {...defaultProps} multiDatasetEnabled />);
+    expect(
+      screen.queryByRole("option", { name: /multiple datasets/i }),
+    ).not.toBeInTheDocument();
   });
 });
 

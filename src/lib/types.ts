@@ -131,6 +131,8 @@ export interface ChatStateResponse {
   state: ConductorState;
   prov_steps: string[];
   retrieved_tables: Record<string, TableRow[]>;
+  /** Each retrieved table's own dataset (they can differ in a multi-dataset chat). */
+  retrieved_table_datasets?: Record<string, string>;
   dataset_name?: string | null;
   used_memory_entries?: UsedMemoryEntry[];
 }
@@ -149,10 +151,16 @@ export interface ChatRequest {
   dataset_name?: string | null;
   plan_mode?: boolean;
   use_memory?: boolean;
+  /** Retrieve tables from any accessible dataset (needs ENABLE_MULTI_DATASET on the backend). */
+  multi_dataset?: boolean;
 }
+
+/** Dataset-picker value meaning "Multiple datasets" (not a real dataset name). */
+export const MULTI_DATASET = "__multiple__";
 
 export interface AccessibleDatasetResponse {
   datasets: string[];
+  multi_dataset_enabled?: boolean;
 }
 
 export interface DatasetTablesResponse {

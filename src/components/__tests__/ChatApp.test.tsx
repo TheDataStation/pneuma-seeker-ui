@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ChatApp } from "@/components/ChatApp";
+import { MULTI_DATASET } from "@/lib/types";
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -273,6 +274,76 @@ describe("ChatApp – plan mode", () => {
       expect(mockStreamChat).toHaveBeenCalledWith(
         expect.objectContaining({ plan_mode: true }),
       );
+    });
+  });
+
+  it("sends multi_dataset and no dataset_name when 'Multiple datasets' is selected", async () => {
+    setupAuthSuccess();
+    mockGetAccessibleDatasets.mockResolvedValue({
+      datasets: ["db1", "db2"],
+      multi_dataset_enabled: true,
+    });
+    mockStreamChat.mockReturnValue(
+      toAsyncGenerator([{ sender: "done", text: "done", time_stamp: 0 }]),
+    );
+    const user = userEvent.setup();
+    render(<ChatApp />);
+    // First login with several datasets defaults to "Multiple datasets".
+    await waitFor(() => {
+      expect(screen.getByRole("combobox")).toHaveValue(MULTI_DATASET);
+    });
+
+    await user.type(
+      screen.getByPlaceholderText("Ask Pneuma-Seeker..."),
+      "compare fires and air quality",
+    );
+    await user.click(screen.getByRole("button", { name: /^send$/i }));
+
+    await waitFor(() => {
+      expect(mockStreamChat).toHaveBeenCalledWith(
+        expect.objectContaining({ multi_dataset: true }),
+      );
+    });
+    expect(mockStreamChat.mock.calls[0][0]).not.toHaveProperty("dataset_name");
+  });
+
+  it("restores the user's last dataset choice instead of the default", async () => {
+    setupAuthSuccess();
+    localStorage.setItem("selectedDataset:u1", "db2");
+    mockGetAccessibleDatasets.mockResolvedValue({
+      datasets: ["db1", "db2"],
+      multi_dataset_enabled: true,
+    });
+    render(<ChatApp />);
+    await waitFor(() => {
+      expect(screen.getByRole("combobox")).toHaveValue("db2");
+    });
+  });
+
+  it("remembers a changed choice for the next session", async () => {
+    setupAuthSuccess();
+    mockGetAccessibleDatasets.mockResolvedValue({
+      datasets: ["db1", "db2"],
+      multi_dataset_enabled: true,
+    });
+    const user = userEvent.setup();
+    render(<ChatApp />);
+    await waitFor(() => {
+      expect(screen.getByRole("combobox")).toHaveValue(MULTI_DATASET);
+    });
+
+    await user.selectOptions(screen.getByRole("combobox"), "db1");
+    await waitFor(() => {
+      expect(localStorage.getItem("selectedDataset:u1")).toBe("db1");
+    });
+  });
+
+  it("defaults to the first dataset when multi-dataset mode is off", async () => {
+    setupAuthSuccess();
+    mockGetAccessibleDatasets.mockResolvedValue({ datasets: ["db1", "db2"] });
+    render(<ChatApp />);
+    await waitFor(() => {
+      expect(screen.getByRole("combobox")).toHaveValue("db1");
     });
   });
 

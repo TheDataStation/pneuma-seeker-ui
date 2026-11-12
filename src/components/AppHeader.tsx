@@ -1,5 +1,5 @@
 // src/components/AppHeader.tsx
-import { User } from "@/lib/types";
+import { MULTI_DATASET, User } from "@/lib/types";
 import Link from "next/link";
 import { useRef } from "react";
 import { useClickOutside } from "@/lib/useClickOutside";
@@ -17,6 +17,7 @@ type AppHeaderProps = {
   accessibleDatasets: string[];
   handleDatasetChange: (dataset: string) => void;
   isDatasetLocked: boolean;
+  multiDatasetEnabled?: boolean;
   isDark: boolean;
   onToggleDark: () => void;
 };
@@ -34,6 +35,7 @@ export default function AppHeader({
   accessibleDatasets,
   handleDatasetChange,
   isDatasetLocked,
+  multiDatasetEnabled = false,
   isDark,
   onToggleDark,
 }: AppHeaderProps) {
@@ -110,6 +112,10 @@ export default function AppHeader({
               {ds}
             </option>
           ))}
+          {((multiDatasetEnabled && accessibleDatasets.length > 1) ||
+            selectedDataset === MULTI_DATASET) && (
+            <option value={MULTI_DATASET}>Multiple datasets</option>
+          )}
         </select>
       </div>
 

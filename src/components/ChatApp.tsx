@@ -32,6 +32,7 @@ import type {
   ChatMessage as ChatMessageType,
   ChatRuntime,
 } from "@/lib/types";
+import { MULTI_DATASET } from "@/lib/types";
 import { clearStoredToken, generateUUID, saveBlob } from "@/lib/utils";
 import AppHeader from "./AppHeader";
 import { CONFIG } from "@/lib/config";
@@ -102,6 +103,7 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
 
   const [accessibleDatasets, setAccessibleDatasets] = useState<string[]>([]);
   const [manualDataset, setManualDataset] = useState<string>("");
+  const [multiDatasetEnabled, setMultiDatasetEnabled] = useState(false);
 
   useEffect(() => {
     if (!user || !manualDataset) return;
@@ -113,8 +115,11 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
     ? (chatStateById[activeChatId] ?? emptyRuntime)
     : emptyRuntime;
 
+  // A multi-dataset chat is persisted without a dataset ("").
   const selectedDataset = activeChatId
-    ? (activeChat.dataset ?? manualDataset)
+    ? activeChat.dataset === ""
+      ? MULTI_DATASET
+      : (activeChat.dataset ?? manualDataset)
     : manualDataset;
 
   const updateChatState = useCallback(
@@ -163,15 +168,23 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
         setUser(currentUser);
         setAuthChecked(true);
         setAccessibleDatasets(datasetsRes.datasets);
+        const multiEnabled = !!datasetsRes.multi_dataset_enabled;
+        setMultiDatasetEnabled(multiEnabled);
 
         if (datasetsRes.datasets.length > 1) {
           const saved = localStorage.getItem(
             `selectedDataset:${currentUser.user_id}`,
           );
+          // Sticky: keep the user's last choice while it's still valid;
+          // otherwise default to searching all datasets when the backend allows it.
           setManualDataset(
-            saved && datasetsRes.datasets.includes(saved)
+            saved &&
+              (datasetsRes.datasets.includes(saved) ||
+                (multiEnabled && saved === MULTI_DATASET))
               ? saved
-              : datasetsRes.datasets[0],
+              : multiEnabled
+                ? MULTI_DATASET
+                : datasetsRes.datasets[0],
           );
         } else if (datasetsRes.datasets.length > 0) {
           setManualDataset(datasetsRes.datasets[0]);
@@ -457,7 +470,9 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
       for await (const event of streamChat({
         chat_id: chatId,
         message: content,
-        dataset_name: selectedDataset,
+        ...(selectedDataset === MULTI_DATASET
+          ? { multi_dataset: true }
+          : { dataset_name: selectedDataset }),
         plan_mode: sentAsPlanMode,
         use_memory: useMemory,
       })) {
@@ -731,6 +746,7 @@ export function ChatApp({ initialChatId }: { initialChatId?: string }) {
               accessibleDatasets={accessibleDatasets}
               handleDatasetChange={setManualDataset}
               isDatasetLocked={!!activeChatId}
+              multiDatasetEnabled={multiDatasetEnabled}
               isDark={isDark}
               onToggleDark={toggleDark}
             />
