@@ -118,6 +118,8 @@ export interface ConductorState {
   is_T_materialized?: boolean;
   is_S_executed?: boolean;
   column_descriptions?: Record<string, Record<string, string>>;
+  /** Where each column of T comes from: table -> column -> source columns. */
+  column_sources?: Record<string, Record<string, string[]>>;
   [key: string]: unknown;
 }
 

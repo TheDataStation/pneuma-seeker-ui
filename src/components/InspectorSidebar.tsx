@@ -95,6 +95,7 @@ function MaterializeViewsStep({
             columnDescriptions={
               sidebar?.state?.column_descriptions?.[currentView[0]] ?? {}
             }
+            columnSources={sidebar?.state?.column_sources?.[currentView[0]]}
             onExpand={() => onExpand(currentView[0], currentView[0])}
           />
           {targetViews.length > 1 && (

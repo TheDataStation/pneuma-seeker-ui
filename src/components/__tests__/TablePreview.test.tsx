@@ -145,3 +145,29 @@ describe("TablePreview – expand button", () => {
     expect(container.querySelector("div.truncate")).not.toBeInTheDocument();
   });
 });
+
+describe("TablePreview – column sources", () => {
+  const rows = [{ region: "Boston", jul: 1.95 }];
+
+  it("lists where each column comes from and adds it to the header tooltip", () => {
+    render(
+      <TablePreview
+        rows={rows}
+        columnDescriptions={{ jul: "July rainfall, inches" }}
+        columnSources={{ jul: ["environment.monthly_precipitations_*.jul"], region: [] }}
+      />,
+    );
+    const list = screen.getByRole("list", { name: "Column sources" });
+    expect(list).toHaveTextContent("jul ← environment.monthly_precipitations_*.jul");
+    expect(list).not.toHaveTextContent("region");
+    expect(screen.getByRole("columnheader", { name: "jul" })).toHaveAttribute(
+      "title",
+      "July rainfall, inches\nFrom: environment.monthly_precipitations_*.jul",
+    );
+  });
+
+  it("shows nothing extra without sources", () => {
+    render(<TablePreview rows={rows} />);
+    expect(screen.queryByRole("list", { name: "Column sources" })).not.toBeInTheDocument();
+  });
+});

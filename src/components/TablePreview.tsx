@@ -4,10 +4,18 @@ type TablePreviewProps = {
   title?: string;
   rows: TableRow[];
   columnDescriptions?: Record<string, string>;
+  /** Where each column comes from ("<dataset>.<table>.<column>"), for target views. */
+  columnSources?: Record<string, string[]>;
   onExpand?: () => void;
 };
 
-export function TablePreview({ title, rows, columnDescriptions, onExpand }: TablePreviewProps) {
+export function TablePreview({
+  title,
+  rows,
+  columnDescriptions,
+  columnSources,
+  onExpand,
+}: TablePreviewProps) {
   // Falls back to columnDescriptions' keys when there are no rows, so a
   // schema-only table (defined but not yet materialized) still shows its
   // column headers instead of collapsing to "Empty table" with no schema.
@@ -46,7 +54,14 @@ export function TablePreview({ title, rows, columnDescriptions, onExpand }: Tabl
                     <th
                       key={col}
                       className="px-3 py-2 font-medium"
-                      title={columnDescriptions?.[col] ?? ""}
+                      title={[
+                        columnDescriptions?.[col] ?? "",
+                        columnSources?.[col]?.length
+                          ? `From: ${columnSources[col].join(", ")}`
+                          : "",
+                      ]
+                        .filter(Boolean)
+                        .join("\n")}
                     >
                       {col}
                     </th>
@@ -76,6 +91,18 @@ export function TablePreview({ title, rows, columnDescriptions, onExpand }: Tabl
           </table>
         </div>
       </div>
+      {columnSources && columns.some((col) => columnSources[col]?.length) && (
+        <ul aria-label="Column sources" className="space-y-0.5 text-[11px] text-slate/60">
+          {columns
+            .filter((col) => columnSources[col]?.length)
+            .map((col) => (
+              <li key={col} className="truncate">
+                <span className="font-medium text-slate/80">{col}</span> ←{" "}
+                {columnSources[col].join(", ")}
+              </li>
+            ))}
+        </ul>
+      )}
     </div>
   );
 }
