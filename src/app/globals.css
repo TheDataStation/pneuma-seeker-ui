@@ -12,12 +12,13 @@
   --shadow-soft: 0 18px 50px -28px rgba(10, 18, 24, 0.35);
 }
 
+/* Dark mode: flat neutral greys (page and frame #1e1e1e, cards #262626). */
 .dark {
-  --color-ink: 226 232 240;
-  --color-sand: 15 23 42;
-  --color-sand-strong: 30 41 59;
-  --color-slate: 148 163 184;
-  --color-card: 22 28 38;
+  --color-ink: 229 229 229;
+  --color-sand: 30 30 30;
+  --color-sand-strong: 64 64 64;
+  --color-slate: 163 163 163;
+  --color-card: 38 38 38;
 }
 
 @theme inline {
@@ -36,19 +37,20 @@
   box-sizing: border-box;
 }
 
+html,
 body {
-  background: radial-gradient(circle at 15% 20%, rgba(128, 0, 0, 0.08) 0%, transparent 52%),
-    radial-gradient(circle at 85% 10%, rgba(0, 42, 57, 0.08) 0%, transparent 55%),
-    linear-gradient(160deg, #f6f4f2 0%, #f7f7f6 45%, #eef2f4 100%);
+  background: #ffffff;
+}
+
+body {
   color: rgb(var(--color-ink));
   font-family: var(--font-sans), system-ui, sans-serif;
   min-height: 100vh;
 }
 
+.dark,
 .dark body {
-  background: radial-gradient(circle at 15% 20%, rgba(128, 0, 0, 0.2) 0%, transparent 52%),
-    radial-gradient(circle at 85% 10%, rgba(0, 42, 57, 0.25) 0%, transparent 55%),
-    linear-gradient(160deg, #0b1120 0%, #0f172a 45%, #0c1a2e 100%);
+  background: rgb(var(--color-sand));
 }
 
 .font-display {
@@ -63,8 +65,10 @@ body {
 }
 
 .dark .app-shell {
-  background: rgba(15, 23, 42, 0.88);
+  background: rgb(var(--color-sand));
   border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .panel {
@@ -74,9 +78,9 @@ body {
 }
 
 .dark .panel {
-  background: rgba(22, 30, 50, 0.95);
+  background: rgb(var(--color-card));
   border-color: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 12px 30px -22px rgba(0, 0, 0, 0.6);
+  box-shadow: none;
 }
 
 .subtle-ring {

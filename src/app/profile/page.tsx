@@ -93,7 +93,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-start bg-sand dark:bg-sand px-4 py-12">
+    <div className="flex min-h-screen flex-col items-center justify-start px-4 py-12">
       <div className="w-full max-w-md space-y-8">
         <div className="flex items-center justify-between">
           <h1 className="font-display text-2xl text-ink">Profile settings</h1>
