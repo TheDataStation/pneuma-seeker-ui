@@ -2,7 +2,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { listDatasetTables, queryDatasetTable } from "@/lib/api";
+import { ApiError, deleteDatasetTable, listDatasetTables, queryDatasetTable } from "@/lib/api";
+import { dangerButton } from "@/components/datasets/DatasetModal";
 import type { TableQueryResponse } from "@/lib/types";
 
 type SortDir = "asc" | "desc";
@@ -14,8 +15,16 @@ const PAGE_SIZE = 50;
  * the dataset-browsing counterpart to TableExplorerModal, minus the modal
  * chrome: the full data is shown directly instead of behind an "Expand" click.
  */
-export function DatasetTableBrowser({ datasetName }: { datasetName: string }) {
+export function DatasetTableBrowser({
+  datasetName,
+  canDeleteTables = false,
+}: {
+  datasetName: string;
+  /** Offers "Delete table" (admins, on an uploaded dataset). */
+  canDeleteTables?: boolean;
+}) {
   const [tables, setTables] = useState<string[]>([]);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [tablesLoading, setTablesLoading] = useState(true);
   const [selectedTable, setSelectedTable] = useState("");
 
@@ -81,6 +90,20 @@ export function DatasetTableBrowser({ datasetName }: { datasetName: string }) {
     fetchData();
   }, [fetchData]);
 
+  async function handleDelete() {
+    if (!window.confirm(`Delete table ${selectedTable} from ${datasetName}? Its descriptions are deleted too.`)) return;
+    setDeleteError(null);
+    try {
+      await deleteDatasetTable(datasetName, selectedTable);
+      const remaining = tables.filter((t) => t !== selectedTable);
+      setTables(remaining);
+      setSelectedTable(remaining[0] ?? "");
+      setData(null);
+    } catch (e) {
+      setDeleteError(e instanceof ApiError ? e.message : "Couldn't delete the table.");
+    }
+  }
+
   const handleSort = (col: string) => {
     if (orderBy === col) {
       setOrderDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -128,7 +151,13 @@ export function DatasetTableBrowser({ datasetName }: { datasetName: string }) {
             {data.total_count.toLocaleString()} rows &middot; {data.columns.length} columns
           </p>
         )}
+        {canDeleteTables && (
+          <button type="button" className={dangerButton} onClick={handleDelete}>
+            Delete table
+          </button>
+        )}
       </div>
+      {deleteError && <p className="text-xs text-red-700">{deleteError}</p>}
 
       <div className="min-w-0 overflow-hidden rounded-2xl border border-sand-strong/70 bg-card">
         <div className="max-h-[28rem] overflow-auto">

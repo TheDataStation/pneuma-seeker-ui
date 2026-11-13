@@ -50,7 +50,7 @@ export default function DatasetsPage() {
         </p>
       </div>
 
-      <DatasetManagementPanel user={user} />
+      <DatasetManagementPanel />
     </div>
   );
 }

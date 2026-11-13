@@ -246,3 +246,50 @@ export interface MemoryMetadataUploadResponse {
   memory_type: MemoryType;
   rows_stored: number;
 }
+
+/** Connector a dataset is read through (see the backend's services/db/datasets/connectors). */
+export type ConnectorType = "parquet_dir" | "csv_dir" | "duckdb" | "sqlite" | "postgres";
+
+export interface DatasetInfo {
+  name: string;
+  connector_type: ConnectorType;
+  connector_label: string;
+  /** Stored under the server's datasets folder (uploaded), so files can be added or deleted. */
+  is_local: boolean;
+}
+
+export interface DatasetListResponse {
+  datasets: DatasetInfo[];
+  /** Whether the current user can add, change and remove datasets. */
+  can_manage: boolean;
+}
+
+export interface ConnectorHealth {
+  ok: boolean;
+  error: string | null;
+  table_count: number;
+}
+
+export interface DatasetSourceDetail extends DatasetInfo {
+  /** The connector's settings, with secrets (the Postgres password) masked. */
+  config: Record<string, unknown>;
+  health: ConnectorHealth;
+}
+
+export interface UploadedTable {
+  name: string;
+  rows: number;
+  columns: number;
+  replaced: boolean;
+}
+
+export interface UploadResult {
+  dataset_name: string;
+  created_dataset: boolean;
+  tables: UploadedTable[];
+}
+
+export interface UploadLimits {
+  max_file_bytes: number;
+  accepted: string[];
+}
